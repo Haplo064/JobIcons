@@ -1,0 +1,44 @@
+
+.vs/Job Icons/v16/.suo
+.vs/Job Icons/v16/Server/sqlite3/db.lock
+.vs/Job Icons/v16/Server/sqlite3/storage.ide
+.vs/Job Icons/v16/Server/sqlite3/storage.ide-shm
+.vs/Job Icons/v16/Server/sqlite3/storage.ide-wal
+bin/Debug/CheapLoc.dll
+bin/Debug/Dalamud.dll
+bin/Debug/Discord.Net.Core.dll
+bin/Debug/Discord.Net.Rest.dll
+bin/Debug/Discord.Net.WebSocket.dll
+bin/Debug/EasyHook.dll
+bin/Debug/ImGui.NET.dll
+bin/Debug/ImGuiScene.dll
+bin/Debug/JobIcons.dll
+bin/Debug/JobIcons.pdb
+bin/Debug/Lumina.dll
+bin/Debug/Lumina.Generated.dll
+bin/Debug/Microsoft.Bcl.AsyncInterfaces.dll
+bin/Debug/Newtonsoft.Json.dll
+bin/Debug/OpenGL.Net.dll
+bin/Debug/SDL2-CS.dll
+bin/Debug/Serilog.dll
+bin/Debug/Serilog.Sinks.Async.dll
+bin/Debug/Serilog.Sinks.File.dll
+bin/Debug/SharpDX.Desktop.dll
+bin/Debug/SharpDX.Direct3D11.dll
+bin/Debug/SharpDX.dll
+bin/Debug/SharpDX.DXGI.dll
+bin/Debug/SharpDX.Mathematics.dll
+bin/Debug/StbiSharp.dll
+bin/Debug/System.Buffers.dll
+bin/Debug/System.Collections.Immutable.dll
+bin/Debug/System.Drawing.Common.dll
+bin/Debug/System.Linq.Async.dll
+bin/Debug/System.Memory.dll
+bin/Debug/System.Numerics.Vectors.dll
+bin/Debug/System.Runtime.CompilerServices.Unsafe.dll
+bin/Debug/System.Threading.Tasks.Extensions.dll
+obj/Debug/Job Icons.csprojAssemblyReference.cache
+obj/Debug/JobIcons.dll
+obj/Debug/JobIcons.pdb
+Properties/AssemblyInfo.cs
+.gitattributes
