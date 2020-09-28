@@ -54,7 +54,7 @@ namespace Job_Icons
 
         public bool help = false;
         public bool enabled = true;
-        public bool config = true;
+        public bool config = false;
         public bool dev = false;
         public bool debug = false;
 
@@ -133,6 +133,7 @@ namespace Job_Icons
 
             role = Configuration.Role;
             enabled = Configuration.Enabled;
+            config = Configuration.ShowConfigAtStartup;
             scaler = Configuration.Scale;
             xAdjust = Configuration.XAdjust;
             yAdjust = Configuration.YAdjust;
@@ -656,6 +657,7 @@ namespace Job_Icons
     {
         public int Version { get; set; } = 0;
         public bool Enabled { get; set; } = true;
+        public bool ShowConfigAtStartup { get; set; } = false;
         public float Scale { get; set; } = 1f;
         public int[] Role { get; set; } = { 0, 0, 0, 0, 0};
         public int XAdjust { get; set; } = -13;

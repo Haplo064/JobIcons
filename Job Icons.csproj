@@ -34,15 +34,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Dalamud">
-      <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
+      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
     </Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
+      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
     </Reference>
     <Reference Include="ImGuiScene">
-      <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
+      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
     </Reference>
-    <Reference Include="Lumina.Generated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="Lumina.Generated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Lumina.Generated.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
