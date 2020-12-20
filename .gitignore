@@ -42,3 +42,20 @@ obj/Debug/JobIcons.dll
 obj/Debug/JobIcons.pdb
 Properties/AssemblyInfo.cs
 .gitattributes
+bin/Debug/Dalamud.pdb
+bin/Debug/Dalamud.xml
+bin/Debug/ImGui.NET.pdb
+bin/Debug/ImGuiScene.pdb
+bin/Debug/IndexRange.dll
+bin/Debug/Lumina.Excel.dll
+bin/Debug/SDL2-CS.dll.config
+bin/Debug/System.ComponentModel.Annotations.dll
+obj/Debug/DesignTimeResolveAssemblyReferences.cache
+obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+obj/Debug/Job Icons.csproj.CopyComplete
+obj/Debug/Job Icons.csproj.FileListAbsolute.txt
+obj/Job Icons.csproj.nuget.cache
+obj/Job Icons.csproj.nuget.dgspec.json
+obj/Job Icons.csproj.nuget.g.props
+obj/Job Icons.csproj.nuget.g.targets
+obj/project.assets.json
