@@ -10,10 +10,10 @@ namespace JobIcons
     {
         public static unsafe void DrawWindow()
         {
-            if (Job_Icons.JobIcons.config)
+            if (Job_Icons.JobIconsPlugin.config)
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(500, 500), ImGuiCond.FirstUseEver);
-                ImGui.Begin("Config", ref Job_Icons.JobIcons.config);
+                ImGui.Begin("Config", ref Job_Icons.JobIconsPlugin.config);
 
 #if Debug                
                 if (ImGui.Button("Party"))
@@ -38,49 +38,49 @@ namespace JobIcons
                 ImGui.SameLine();
                 ImGui.Text(Job_Icons.JobIcons.debug.ToString());
 #endif                
-                ImGui.Checkbox("Enable", ref Job_Icons.JobIcons.enabled);
-                ImGui.InputFloat("Scale", ref Job_Icons.JobIcons.scaler);
-                ImGui.InputInt("X Adjust", ref Job_Icons.JobIcons.xAdjust);
-                ImGui.InputInt("Y Adjust", ref Job_Icons.JobIcons.yAdjust);
+                ImGui.Checkbox("Enable", ref Job_Icons.JobIconsPlugin.enabled);
+                ImGui.InputFloat("Scale", ref Job_Icons.JobIconsPlugin.scaler);
+                ImGui.InputInt("X Adjust", ref Job_Icons.JobIconsPlugin.xAdjust);
+                ImGui.InputInt("Y Adjust", ref Job_Icons.JobIconsPlugin.yAdjust);
 
-                ImGui.Checkbox("Show Name", ref Job_Icons.JobIcons.showName);
-                ImGui.Checkbox("Show Title", ref Job_Icons.JobIcons.showtitle);
-                ImGui.Checkbox("Show FC", ref Job_Icons.JobIcons.showFC);
+                ImGui.Checkbox("Show Name", ref Job_Icons.JobIconsPlugin.showName);
+                ImGui.Checkbox("Show Title", ref Job_Icons.JobIconsPlugin.showtitle);
+                ImGui.Checkbox("Show FC", ref Job_Icons.JobIconsPlugin.showFC);
 
-                if (ImGui.BeginCombo("Tank Icon Set", Job_Icons.JobIcons.setNames[Job_Icons.JobIcons.role[1]]))
+                if (ImGui.BeginCombo("Tank Icon Set", Job_Icons.JobIconsPlugin.setNames[Job_Icons.JobIconsPlugin.role[1]]))
                 {
-                    for (int i = 0; i < Job_Icons.JobIcons.setNames.Length; i++)
+                    for (int i = 0; i < Job_Icons.JobIconsPlugin.setNames.Length; i++)
                     {
-                        if (ImGui.Selectable(Job_Icons.JobIcons.setNames[i]))
+                        if (ImGui.Selectable(Job_Icons.JobIconsPlugin.setNames[i]))
                         {
-                            Job_Icons.JobIcons.role[1] = i;
+                            Job_Icons.JobIconsPlugin.role[1] = i;
                         }
                     }
 
                     ImGui.EndCombo();
                 }
 
-                if (ImGui.BeginCombo("Heal Icon Set", Job_Icons.JobIcons.setNames[Job_Icons.JobIcons.role[4]]))
+                if (ImGui.BeginCombo("Heal Icon Set", Job_Icons.JobIconsPlugin.setNames[Job_Icons.JobIconsPlugin.role[4]]))
                 {
-                    for (int i = 0; i < Job_Icons.JobIcons.setNames.Length; i++)
+                    for (int i = 0; i < Job_Icons.JobIconsPlugin.setNames.Length; i++)
                     {
-                        if (ImGui.Selectable(Job_Icons.JobIcons.setNames[i]))
+                        if (ImGui.Selectable(Job_Icons.JobIconsPlugin.setNames[i]))
                         {
-                            Job_Icons.JobIcons.role[4] = i;
+                            Job_Icons.JobIconsPlugin.role[4] = i;
                         }
                     }
 
                     ImGui.EndCombo();
                 }
 
-                if (ImGui.BeginCombo("DPS Icon Set", Job_Icons.JobIcons.setNames[Job_Icons.JobIcons.role[2]]))
+                if (ImGui.BeginCombo("DPS Icon Set", Job_Icons.JobIconsPlugin.setNames[Job_Icons.JobIconsPlugin.role[2]]))
                 {
-                    for (int i = 0; i < Job_Icons.JobIcons.setNames.Length; i++)
+                    for (int i = 0; i < Job_Icons.JobIconsPlugin.setNames.Length; i++)
                     {
-                        if (ImGui.Selectable(Job_Icons.JobIcons.setNames[i]))
+                        if (ImGui.Selectable(Job_Icons.JobIconsPlugin.setNames[i]))
                         {
-                            Job_Icons.JobIcons.role[2] = i;
-                            Job_Icons.JobIcons.role[3] = i;
+                            Job_Icons.JobIconsPlugin.role[2] = i;
+                            Job_Icons.JobIconsPlugin.role[3] = i;
                         }
                     }
 
@@ -89,45 +89,45 @@ namespace JobIcons
 
                 if (ImGui.Button("Save and Close Config"))
                 {
-                    Job_Icons.JobIcons.SaveConfig();
+                    Job_Icons.JobIconsPlugin.SaveConfig();
 
-                    Job_Icons.JobIcons.config = false;
+                    Job_Icons.JobIconsPlugin.config = false;
                 }
 
                 ImGui.End();
             }
 
-            if (Job_Icons.JobIcons.help)
+            if (Job_Icons.JobIconsPlugin.help)
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(500, 500), ImGuiCond.FirstUseEver);
-                ImGui.Begin("Help", ref Job_Icons.JobIcons.help);
-                foreach (int actorId in Job_Icons.JobIcons.partyList)
+                ImGui.Begin("Help", ref Job_Icons.JobIconsPlugin.help);
+                foreach (int actorId in Job_Icons.JobIconsPlugin.partyList)
                 {
                     ImGui.Text(actorId.ToString());
-                    ImGui.Text(Job_Icons.JobIcons.GetActorName(actorId));
-                    ImGui.Text(Job_Icons.JobIcons.isObjectIDInParty(Job_Icons.JobIcons.groupManager, actorId).ToString());
+                    ImGui.Text(Job_Icons.JobIconsPlugin.GetActorName(actorId));
+                    ImGui.Text(Job_Icons.JobIconsPlugin.isObjectIDInParty(Job_Icons.JobIconsPlugin.groupManager, actorId).ToString());
                 }
 
                 ImGui.End();
             }
 
-            if (Job_Icons.JobIcons.enabled)
+            if (Job_Icons.JobIconsPlugin.enabled)
             {
-                if (Job_Icons.JobIcons.pluginInterface.ClientState.LocalPlayer != null)
+                if (Job_Icons.JobIconsPlugin.pluginInterface.ClientState.LocalPlayer != null)
                 {
-                    for (var k = 0; k < Job_Icons.JobIcons.pluginInterface.ClientState.Actors.Length; k++)
+                    for (var k = 0; k < Job_Icons.JobIconsPlugin.pluginInterface.ClientState.Actors.Length; k++)
                     {
-                        var actor = Job_Icons.JobIcons.pluginInterface.ClientState.Actors[k];
+                        var actor = Job_Icons.JobIconsPlugin.pluginInterface.ClientState.Actors[k];
 
                         if (actor == null) continue;
 
-                        if (Job_Icons.JobIcons.InParty(actor))
+                        if (Job_Icons.JobIconsPlugin.InParty(actor))
                         {
                             try
                             {
-                                if (!Job_Icons.JobIcons.partyList.Contains(actor.ActorId))
+                                if (!Job_Icons.JobIconsPlugin.partyList.Contains(actor.ActorId))
                                 {
-                                    if (Job_Icons.JobIcons.pluginInterface.ClientState.Actors[k] is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc) Job_Icons.JobIcons.partyList.Add(pc.ActorId);
+                                    if (Job_Icons.JobIconsPlugin.pluginInterface.ClientState.Actors[k] is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc) Job_Icons.JobIconsPlugin.partyList.Add(pc.ActorId);
                                 }
                             }
                             catch (Exception e)
@@ -137,29 +137,29 @@ namespace JobIcons
                         }
                     }
 
-                    for (int i = 0; i < Job_Icons.JobIcons.partyList.Count; i++)
+                    for (int i = 0; i < Job_Icons.JobIconsPlugin.partyList.Count; i++)
                     {
-                        if (Job_Icons.JobIcons.isObjectIDInParty(Job_Icons.JobIcons.groupManager, Job_Icons.JobIcons.partyList[i]) == 0)
+                        if (Job_Icons.JobIconsPlugin.isObjectIDInParty(Job_Icons.JobIconsPlugin.groupManager, Job_Icons.JobIconsPlugin.partyList[i]) == 0)
                         {
-                            Job_Icons.JobIcons.partyList.RemoveAt(i);
+                            Job_Icons.JobIconsPlugin.partyList.RemoveAt(i);
                             i--;
                         }
                     }
 
-                    if ((int)Job_Icons.JobIcons.npObjArray != 0)
+                    if ((int)Job_Icons.JobIconsPlugin.npObjArray != 0)
                     {
-                        Job_Icons.JobIcons.NPObjects = new List<IntPtr>();
+                        Job_Icons.JobIconsPlugin.NPObjects = new List<IntPtr>();
                         for (int i = 0; i < 50; i++)
                         {
-                            Job_Icons.JobIcons.NPObjects.Add((IntPtr)Job_Icons.JobIcons.npObjArray + (0x70 * i));
+                            Job_Icons.JobIconsPlugin.NPObjects.Add((IntPtr)Job_Icons.JobIconsPlugin.npObjArray + (0x70 * i));
                         }
 
-                        foreach (IntPtr x in Job_Icons.JobIcons.NPObjects)
+                        foreach (IntPtr x in Job_Icons.JobIconsPlugin.NPObjects)
                         {
                             var test = (AddonNamePlate.BakePlateRenderer.NamePlateObject*)x;
-                            if (!Job_Icons.JobIcons.partyList.Contains(Job_Icons.JobIcons.GetActorFromNameplate(x)))
+                            if (!Job_Icons.JobIconsPlugin.partyList.Contains(Job_Icons.JobIconsPlugin.GetActorFromNameplate(x)))
                             {
-                                Job_Icons.JobIcons.scaleIcon(Marshal.ReadIntPtr(x + 24), 1.0001f, 1.0001f);
+                                Job_Icons.JobIconsPlugin.scaleIcon(Marshal.ReadIntPtr(x + 24), 1.0001f, 1.0001f);
                                 test->ImageNode1->AtkResNode.ScaleY = 1f;
                                 test->ImageNode1->AtkResNode.ScaleX = 1f;
                             }

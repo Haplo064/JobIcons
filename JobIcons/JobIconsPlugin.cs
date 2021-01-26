@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 
 namespace Job_Icons
 {
-    public class JobIcons : IDalamudPlugin
+    public class JobIconsPlugin : IDalamudPlugin
     {
         public string Name => "JobIcons";
         public static DalamudPluginInterface pluginInterface;
@@ -128,7 +128,7 @@ namespace Job_Icons
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(GetBaseUIObject);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(GetUI2ObjByName);
 
-            JobIcons.pluginInterface = pluginInterface;
+            JobIconsPlugin.pluginInterface = pluginInterface;
             Configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
 
             emptyPointer = StringToSeStringPtr("");
@@ -143,7 +143,7 @@ namespace Job_Icons
             showtitle = Configuration.ShowTitle;
             showFC = Configuration.ShowFC;
 
-            JobIcons.pluginInterface.CommandManager.AddHandler("/jicons", new CommandInfo(Command)
+            JobIconsPlugin.pluginInterface.CommandManager.AddHandler("/jicons", new CommandInfo(Command)
             {
                 HelpMessage = "Opens Job Icons config."
             });
@@ -158,8 +158,8 @@ namespace Job_Icons
             nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
             if (nameplateUIPtr != IntPtr.Zero) { npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray; }
 
-            JobIcons.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
-            JobIcons.pluginInterface.UiBuilder.OnBuildUi += Draw.DrawWindow;
+            JobIconsPlugin.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
+            JobIconsPlugin.pluginInterface.UiBuilder.OnBuildUi += Draw.DrawWindow;
         }
 
         public unsafe IntPtr RaptureAtkThingFunc(RaptureAtkModule* this_var, IntPtr what, IntPtr ever, IntPtr it, IntPtr dont, uint matter, uint really)
@@ -292,7 +292,7 @@ namespace Job_Icons
 
         public static void SaveConfig()
         {
-            JobIcons.Configuration.Enabled = enabled;
+            JobIconsPlugin.Configuration.Enabled = enabled;
             Configuration.Role = role;
             Configuration.Scale = scaler;
             Configuration.XAdjust = xAdjust;
@@ -306,8 +306,8 @@ namespace Job_Icons
         public void Dispose()
         {
             pluginInterface.CommandManager.RemoveHandler("/jicons");
-            JobIcons.pluginInterface.UiBuilder.OnBuildUi -= Draw.DrawWindow;
-            JobIcons.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
+            JobIconsPlugin.pluginInterface.UiBuilder.OnBuildUi -= Draw.DrawWindow;
+            JobIconsPlugin.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
             setNamePlateHook.Disable();
             setNamePlateHook.Dispose();
             Marshal.FreeHGlobal(emptyPointer);
