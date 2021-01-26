@@ -3,6 +3,7 @@ using Dalamud.Game.Chat.SeStringHandling.Payloads;
 using Dalamud.Game.Command;
 using Dalamud.Hooking;
 using Dalamud.Plugin;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using JobIcons;
 using System;
 using System.Collections.Generic;
@@ -94,7 +95,7 @@ namespace Job_Icons
         public static IntPtr baseUIObject = IntPtr.Zero;
         public static IntPtr baseUiProperties = IntPtr.Zero;
         public static IntPtr nameplateUIPtr = IntPtr.Zero;
-        public static unsafe byte* npObjArray;
+        public static unsafe void* npObjArray;
 
         public bool nparray = true;
 
@@ -180,8 +181,8 @@ namespace Job_Icons
 
         public unsafe void AdjustIconScale(IntPtr this_obj, float scale)
         {
-            ((AddonNamePlate.BakePlateRenderer.NamePlateObject*)this_obj)->ImageNode1->AtkResNode.ScaleY = scale;
-            ((AddonNamePlate.BakePlateRenderer.NamePlateObject*)this_obj)->ImageNode1->AtkResNode.ScaleX = scale;
+            ((AddonNamePlate.NamePlateObject*)this_obj)->ImageNode1->AtkResNode.ScaleY = scale;
+            ((AddonNamePlate.NamePlateObject*)this_obj)->ImageNode1->AtkResNode.ScaleX = scale;
         }
 
         public unsafe IntPtr SetNamePlateFunc(IntPtr this_var, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
@@ -278,10 +279,10 @@ namespace Job_Icons
                     if (baseUiProperties != IntPtr.Zero)
                     {
                         var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
-                        var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
+                        var npInfo = (&RaptureAtkModule->NamePlateInfoArray)[npIndex];
 
                         // PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
-                        return npInfo->ActorID;
+                        return npInfo.ActorID;
                     }
                 }
             }
