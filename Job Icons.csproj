@@ -54,6 +54,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Draw.cs" />
+    <Compile Include="Config.cs" />
+    <Compile Include="Structs.cs" />
     <Compile Include="JobIcons.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
