@@ -59,3 +59,5 @@ obj/Job Icons.csproj.nuget.dgspec.json
 obj/Job Icons.csproj.nuget.g.props
 obj/Job Icons.csproj.nuget.g.targets
 obj/project.assets.json
+obj/Debug/.NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+obj/Debug/Job Icons.csproj.CoreCompileInputs.cache

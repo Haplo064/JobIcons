@@ -8,6 +8,9 @@ using Num = System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Hooking;
 using System.Linq;
+using Dalamud.Game.Chat;
+using Dalamud.Game.Chat.SeStringHandling;
+using Dalamud.Game.Chat.SeStringHandling.Payloads;
 
 namespace Job_Icons
 {
@@ -35,9 +38,9 @@ namespace Job_Icons
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    unsafe struct RaptureAtkModule
+    public unsafe struct RaptureAtkModule
     {
-        [FieldOffset(0x19DE0)] public fixed byte NamePlateInfo[0x248 * 50];
+        [FieldOffset(0x1A248)] public fixed byte NamePlateInfo[0x248 * 50];
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -67,16 +70,21 @@ namespace Job_Icons
         public int xAdjust = -13;
         public int yAdjust = 55;
 
-        public bool showName = false;
-        public bool showFC = false;
-        public bool showtitle = false;
+        public bool showName = true;
+        public bool showFC = true;
+        public bool showtitle = true;
+
+        public IntPtr emptyPointer;
+        public IntPtr namePointer;
 
         public string[] setNames = { "Gold", "Framed", "Glowing", "Grey", "Black", "Yellow", "Orange", "Red", "Purple", "Blue", "Green" };
 
         public int countdown = 1000;
-        public List<PartyMem> partyList = new List<PartyMem>();
+        public List<int> partyList = new List<int>();
         public IntPtr me = IntPtr.Zero;
         public int meInt = 0;
+        public IntPtr raptk = IntPtr.Zero;
+        public IntPtr groupManager = IntPtr.Zero;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate IntPtr GetBaseUIObjDelegate();
@@ -88,12 +96,25 @@ namespace Job_Icons
 
         public GetUI2ObjByNameDelegate getUI2ObjByName;
 
+        //E8 ?? ?? ?? ?? EB B8 E8 bool IsObjectIDInParty(groupManager, id)
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
+        private delegate byte IsObjectIDInParty(IntPtr groupManager, int ActorId);
+        private IsObjectIDInParty isObjectIDInParty;
+        public IntPtr isObjectIDInPartyPtr;
+
         //void FUN_140e9f0e0(IntPtr this, bool isPrefixTitle, bool displayTitle, char* title, char* name, char* fcName, int iconId)
         [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-        private unsafe delegate IntPtr SetNamePlate(IntPtr this_var, bool isPrefixTitle, bool displayTitle, string title, string name, string fcName, int iconId);
+        private unsafe delegate IntPtr SetNamePlate(IntPtr this_var, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId);
         private SetNamePlate setNamePlate;
         private Hook<SetNamePlate> setNamePlateHook;
         public IntPtr setNamePlatePtr;
+
+        //void FUN_1405C5E50 raptureatkmodule::whocares(raptureatkmodule * this, intptr what, intptr ever, intptr it, intptr dont, uint matter, uint really)
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
+        public unsafe delegate IntPtr RaptureAtkThing(RaptureAtkModule* this_var, IntPtr what, IntPtr ever, IntPtr it, IntPtr dont, uint matter, uint really);
+        private RaptureAtkThing raptureAtkThing;
+        private Hook<RaptureAtkThing> raptureAtkThingHook;
+        public IntPtr raptureAtkThingPtr;
 
         [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
         private delegate IntPtr scaleIconFunc(IntPtr thisObj, float a, float b);
@@ -102,7 +123,7 @@ namespace Job_Icons
 
         public IntPtr UIModulePtr = IntPtr.Zero;
         public IntPtr UI3DModule = IntPtr.Zero;
-        private unsafe RaptureAtkModule* RaptureAtkModule;
+        public unsafe RaptureAtkModule* RaptureAtkModule;
         public IntPtr NameplateArray = IntPtr.Zero;
         public IntPtr baseUIObject = IntPtr.Zero;
         public IntPtr baseUiProperties = IntPtr.Zero;
@@ -118,18 +139,32 @@ namespace Job_Icons
             catch (Exception e)
             { PluginLog.Log("BAD 1\n" + e.ToString()); }
 
+            groupManager = pluginInterface.TargetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? 44 8B E7");
+
+            isObjectIDInPartyPtr = pluginInterface.TargetModuleScanner.ScanText("E8 ?? ?? ?? ?? EB B8 E8");
+            isObjectIDInParty = Marshal.GetDelegateForFunctionPointer<IsObjectIDInParty>(isObjectIDInPartyPtr);
 
             scaleIconPtr = pluginInterface.TargetModuleScanner.ScanText("8B 81 ?? ?? ?? ?? A8 01 75 ?? F3 0F 10 41 ?? 0F 2E C1 7A ?? 75 ?? F3 0F 10 41 ?? 0F 2E C2 7A ?? 74 ?? 83 C8 01 89 81 ?? ?? ?? ?? F3 0F 10 05 ?? ?? ?? ??");
             scaleIcon = Marshal.GetDelegateForFunctionPointer<scaleIconFunc>(scaleIconPtr);
 
+            raptureAtkThingPtr = pluginInterface.TargetModuleScanner.ScanText("40 53 55 56 41 56 48 81 EC ?? ?? ?? ?? 48 8B 84 24 ?? ?? ?? ??");
+            raptureAtkThing = new RaptureAtkThing(RaptureAtkThingFunc);
+            try
+            { raptureAtkThingHook = new Hook<RaptureAtkThing>(raptureAtkThingPtr, raptureAtkThing, this); raptureAtkThingHook.Enable(); }
+            catch (Exception e)
+            { PluginLog.Log("BAD 2\n" + e.ToString()); }
+
             var GetBaseUIObject = pluginInterface.TargetModuleScanner.ScanText("E8 ?? ?? ?? ?? 41 b8 01 00 00 00 48 8d 15 ?? ?? ?? ?? 48 8b 48 20 e8 ?? ?? ?? ?? 48 8b cf");
             var GetUI2ObjByName = pluginInterface.TargetModuleScanner.ScanText("e8 ?? ?? ?? ?? 48 8b cf 48 89 87 ?? ?? 00 00 e8 ?? ?? ?? ?? 41 b8 01 00 00 00");
-
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(GetBaseUIObject);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(GetUI2ObjByName);
 
+
             this.pluginInterface = pluginInterface;
             Configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
+
+            emptyPointer = stringToSeStringPtr("");
+            namePointer = stringToSeStringPtr("Banana Maiden");
 
             role = Configuration.Role;
             enabled = Configuration.Enabled;
@@ -147,39 +182,38 @@ namespace Job_Icons
 
             UIModulePtr = Marshal.ReadIntPtr(pluginInterface.Framework.Address.BaseAddress, 0x29F8);
             UI3DModule = Marshal.ReadIntPtr(UIModulePtr, 0xA62C0);
-            RaptureAtkModule = (RaptureAtkModule*)(Marshal.ReadIntPtr(pluginInterface.Framework.Address.BaseAddress, 0x29F8) + 0xB3780).ToPointer();
-
+            //RaptureAtkModule = (RaptureAtkModule*)(Marshal.ReadIntPtr(pluginInterface.Framework.Address.BaseAddress, 0x29F8) + 0xB47D0).ToPointer();
+            //PluginLog.Log($"RaptureATK: {(long)RaptureAtkModule:X}");
             nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
             if (nameplateUIPtr != IntPtr.Zero) { npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray; }
-            
+
 
             this.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
             this.pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
 
         }
 
+        public unsafe IntPtr RaptureAtkThingFunc(RaptureAtkModule* this_var, IntPtr what, IntPtr ever, IntPtr it, IntPtr dont, uint matter, uint really)
+        {
+            if (raptk == IntPtr.Zero)
+            {
+                //PluginLog.Log($"{(long)this_var:X}");
+                raptk = (IntPtr)this_var;
+                RaptureAtkModule = this_var;
+            }
+            //PluginLog.Log($"{(long)this_var:X}");
+            return raptureAtkThingHook.Original(this_var, what, ever, it, dont, matter, really);
+        }
 
         public void AdjustIconPos(IntPtr this_obj)
         {
             Marshal.WriteInt16(this_obj + 0x5A, (short)yAdjust);
-
-            if (xAdjust < 0)
-            {
-                Marshal.WriteInt16(this_obj + 0x58, 0);
-                Marshal.WriteInt16(this_obj + 0x54, (short)(Math.Abs(xAdjust)));
-            }
-            else
-            {
-                Marshal.WriteInt16(this_obj + 0x54, 0);
-                Marshal.WriteInt16(this_obj + 0x58, (short)xAdjust);
-            }
-
-
+            Marshal.WriteInt16(this_obj + 0x58, (short)xAdjust);
         }
 
-        public unsafe IntPtr setNamePlateFunc(IntPtr this_var, bool isPrefixTitle, bool displayTitle, string title, string name, string fcName, int iconId)
+        public unsafe IntPtr setNamePlateFunc(IntPtr this_var, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
         {
-            
+            /*
             if (enabled)
             {
                 foreach (PartyMem pm in partyList)
@@ -235,32 +269,103 @@ namespace Job_Icons
                     return x;
                 }
             }
-            
+            return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+            */
+
+            //Do loop, check name is same, instead of if ID changed?
+
+            var actorID = getActorFromNameplate(this_var);
+            if (pluginInterface.ClientState.LocalPlayer != null)
+            {
+                if (partyList.Contains(actorID))
+                {
+                    float scaled = scaler;
+                    var pc = GetPC(actorID);
+                    if (!showName) name = emptyPointer;
+                    if (!showtitle) title = emptyPointer;
+                    if (!showFC) fcName = emptyPointer;
+
+                    if ((role[pc.ClassJob.GameData.Role] > 2)) scaled *= 2;
+                    scaleIcon(Marshal.ReadIntPtr(this_var + 24), scaled, scaled);
+
+                    var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon(
+                        (int)pc.ClassJob.Id,
+                        role[pc.ClassJob.GameData.Role]));
+                    AdjustIconPos(this_var);
+                    return x;
+                }
+            }
+            if (actorID == pluginInterface.ClientState.LocalPlayer.ActorId && debug)
+            {
+                float scaled = scaler;
+
+                if (!showName) name = emptyPointer;
+                if (!showtitle) title = emptyPointer;
+                if (!showFC) fcName = emptyPointer;
+
+                if ((role[pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role] > 2)) scaled *= 2;
+                scaleIcon(Marshal.ReadIntPtr(this_var + 24), scaled, scaled);
+
+                var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon((int)pluginInterface.ClientState.LocalPlayer.ClassJob.Id, role[(int)pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role]));
+                AdjustIconPos(this_var);
+                return x;
+            }
+
+            var y = (uint)Marshal.ReadInt16(this_var, 0xA0) & 1;
+            PluginLog.Log($"{GetActorName(actorID)}: {y}");
+            scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1f, 1f);
             return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
         }
+        public unsafe SeString GetSeStringFromPtr(byte* ptr)
+        {
+            var offset = 0;
+            while (true)
+            {
+                var b = *(ptr + offset);
+                if (b == 0) break;
+                offset += 1;
+            }
 
+            var bytes = new byte[offset];
+            Marshal.Copy(new IntPtr(ptr), bytes, 0, offset);
+            return pluginInterface.SeStringManager.Parse(bytes);
+        }
+
+        public unsafe IntPtr stringToSeStringPtr(string rawText)
+        {
+            var seString = new SeString(new List<Payload>());
+            seString.Payloads.Add(new TextPayload(rawText));
+            var bytes = seString.Encode();
+            IntPtr pointer = Marshal.AllocHGlobal(bytes.Length + 1);
+            Marshal.Copy(bytes, 0, pointer, bytes.Length);
+            Marshal.WriteByte(pointer, bytes.Length, 0);
+            return pointer;
+        }
 
         public unsafe int getActorFromNameplate(IntPtr this_var)
         {
-            var npObjPtr = this_var.ToPointer();
-            if (nameplateUIPtr == IntPtr.Zero)
+            if (raptk != IntPtr.Zero)
             {
-                nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
-            }
-            if (nameplateUIPtr != IntPtr.Zero)
-            {
-                npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray;
-            }
-            if (baseUIObject != IntPtr.Zero)
-            {
-                if (baseUiProperties != IntPtr.Zero)
+                var npObjPtr = this_var.ToPointer();
+                if (nameplateUIPtr == IntPtr.Zero)
                 {
+                    nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
+                }
+                if (nameplateUIPtr != IntPtr.Zero)
+                {
+                    npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray;
+                }
+                if (baseUIObject != IntPtr.Zero)
+                {
+                    if (baseUiProperties != IntPtr.Zero)
+                    {
 
-                    var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
-                    var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
+                        var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
+                        var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
 
-                    //PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
-                    return npInfo->ActorID;
+                        //PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
+                        return npInfo->ActorID;
+                    }
                 }
             }
 
@@ -285,6 +390,8 @@ namespace Job_Icons
             this.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
             setNamePlateHook.Disable();
             setNamePlateHook.Dispose();
+            Marshal.FreeHGlobal(emptyPointer);
+            Marshal.FreeHGlobal(namePointer);
         }
 
         private void Command(string command, string arguments)
@@ -463,9 +570,9 @@ namespace Job_Icons
                 ImGui.InputInt("X Adjust", ref xAdjust);
                 ImGui.InputInt("Y Adjust", ref yAdjust);
 
-                //ImGui.Checkbox("Show Name", ref showName);
-                //ImGui.Checkbox("Show Title", ref showtitle);
-                //ImGui.Checkbox("Show FC", ref showFC);
+                ImGui.Checkbox("Show Name", ref showName);
+                ImGui.Checkbox("Show Title", ref showtitle);
+                ImGui.Checkbox("Show FC", ref showFC);
 
                 if (ImGui.BeginCombo("Tank Icon Set", setNames[role[1]]))
                 {
@@ -519,12 +626,12 @@ namespace Job_Icons
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(500, 500), ImGuiCond.FirstUseEver);
                 ImGui.Begin("Help", ref help);
-                ImGui.TextWrapped("Hi! Thanks for trying out my plugin. It's mostly done, but can always use improvement. Here's a quick guide to how the config works.");
-                ImGui.TextWrapped("- The scale is 1.0 for 'default', 2.0 for double etc.");
-                ImGui.TextWrapped("- X and Y Adjust to make the icon appear where you want, relative to the player.");
-                ImGui.TextWrapped("- The icons only apply to party members.");
-                ImGui.TextWrapped("- Make sure to save to keep your changes!");
-                ImGui.TextWrapped("- If there is a problem, let me know on the discords.");
+                foreach (int actorId in partyList)
+                {
+                    ImGui.Text(actorId.ToString());
+                    ImGui.Text(GetActorName(actorId));
+                    ImGui.Text(isObjectIDInParty(groupManager, actorId).ToString());
+                }
                 ImGui.End();
             }
 
@@ -532,111 +639,77 @@ namespace Job_Icons
             {
                 if (this.pluginInterface.ClientState.LocalPlayer != null)
                 {
-                    if (countdown == 0)
+
+                    for (var k = 0; k < this.pluginInterface.ClientState.Actors.Length; k++)
                     {
+                        var actor = this.pluginInterface.ClientState.Actors[k];
 
-                        List<string> cleanup = new List<string>();
-
-                        for (var k = 0; k < this.pluginInterface.ClientState.Actors.Length; k++)
-                        {
-                            var actor = this.pluginInterface.ClientState.Actors[k];
-
-                            if (actor == null)
-                                continue;
-
-
-                            if (InParty(actor))
-                            {
-                                try
-                                {
-                                    bool exists = false;
-                                    foreach (PartyMem pm in partyList)
-                                    {
-                                        if (pm.PC.Name == actor.Name) exists = true;
-                                        cleanup.Add(actor.Name);
-                                    }
-                                    if (exists) continue;
-
-                                    var pc = (Dalamud.Game.ClientState.Actors.Types.PlayerCharacter)actor;
-                                    partyList.Add(new PartyMem(pc, IntPtr.Zero));
-                                    cleanup.Add(actor.Name);
-
-                                }
-                                catch (Exception e)
-                                {
-                                    //PluginLog.LogError(e.ToString()); -- Noise spam, abusing use as filter.
-                                }
-
-                            }
-
-                        }
-
-                        for (int i = 0; i < partyList.Count; i++)
-                        {
-                            bool yes = false;
-                            foreach (string cleaner in cleanup)
-                            {
-                                if (partyList[i].PC.Name == cleaner)
-                                {
-                                    yes = true;
-                                }
-                            }
-                            if (!yes)
-                            {
-                                if (partyList[i].NamePlatePtr != IntPtr.Zero) { scaleIcon(Marshal.ReadIntPtr(partyList[i].NamePlatePtr + 24), 1f, 1f); }
-                                partyList.RemoveAt(i);
-                                i--;
-                            }
-                        }
-                        countdown = 50;
-                    }
-
-                    countdown--;
-                }
-
-                int[] partyIDs = new int[partyList.Count];
-                for (int i = 0; i < partyList.Count; i++)
-                {
-                    partyIDs[i] = partyList[i].PC.ActorId;
-                }
-                foreach (PartyMem pm in partyList)
-                {
-                    if (pm.NamePlatePtr != IntPtr.Zero)
-                    {
-                        if (partyIDs.Contains(getActorFromNameplate(pm.NamePlatePtr)))
-                        {
+                        if (actor == null)
                             continue;
-                        }
-                        else
-                        {
-                            scaleIcon(Marshal.ReadIntPtr(pm.NamePlatePtr + 24), 1f, 1f);
-                            pm.NamePlatePtr = IntPtr.Zero;
-                        }
 
+                        if (InParty(actor))
+                        {
+                            try
+                            {
+                                if (!partyList.Contains(actor.ActorId))
+                                {
+                                    if (pluginInterface.ClientState.Actors[k] is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc) partyList.Add(pc.ActorId);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                //PluginLog.LogError(e.ToString()); -- Noise spam, abusing use as filter for non PCs.
+                            }
+                        }
                     }
-                }
-            }
-            else
-            {
-                if (partyList.Count > 0)
-                {
+
                     for (int i = 0; i < partyList.Count; i++)
                     {
-                        if (partyList[i].NamePlatePtr != IntPtr.Zero) { scaleIcon(Marshal.ReadIntPtr(partyList[i].NamePlatePtr + 24), 1f, 1f); }
+
+                        if (isObjectIDInParty(groupManager, partyList[i]) == 0)
+                        {
+                            partyList.RemoveAt(i);
+                            i--;
+                        }
+
                     }
-                    partyList = new List<PartyMem>();
+                    // { scaleIcon(Marshal.ReadIntPtr(partyList[i].NamePlatePtr + 24), 1f, 1f); }
                 }
             }
         }
 
+        public string GetActorName(int actorId)
+        {
+            for (var k = 0; k < pluginInterface.ClientState.Actors.Length; k++)
+            {
+                if (pluginInterface.ClientState.Actors[k] is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
+                {
+                    if (pc.ActorId == actorId) return pc.Name;
+                }
+            }
 
+            return "";
+        }
+
+        public Dalamud.Game.ClientState.Actors.Types.PlayerCharacter GetPC(int actorId)
+        {
+            for (var k = 0; k < pluginInterface.ClientState.Actors.Length; k++)
+            {
+                if (pluginInterface.ClientState.Actors[k] is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
+                {
+                    if (pc.ActorId == actorId) return pc;
+                }
+            }
+
+            return null;
+        }
         private bool InParty(Dalamud.Game.ClientState.Actors.Types.Actor actor)
         {
             return (GetStatus(actor) & 16) > 0;
         }
         private static byte GetStatus(Dalamud.Game.ClientState.Actors.Types.Actor actor)
         {
-            IntPtr statusPtr = actor.Address + 0x1906;
+            IntPtr statusPtr = actor.Address + 0x1980;
             return Marshal.ReadByte(statusPtr);
         }
     }
@@ -657,7 +730,7 @@ namespace Job_Icons
         public int Version { get; set; } = 0;
         public bool Enabled { get; set; } = true;
         public float Scale { get; set; } = 1f;
-        public int[] Role { get; set; } = { 0, 0, 0, 0, 0};
+        public int[] Role { get; set; } = { 0, 0, 0, 0, 0 };
         public int XAdjust { get; set; } = -13;
         public int YAdjust { get; set; } = 55;
     }
