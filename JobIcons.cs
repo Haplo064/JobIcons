@@ -160,9 +160,23 @@ namespace Job_Icons
             JobIcons.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
             JobIcons.pluginInterface.UiBuilder.OnBuildUi += Draw.DrawWindow;
         }
+        public void Dispose()
+        {
+            pluginInterface.CommandManager.RemoveHandler("/jicons");
+            JobIcons.pluginInterface.UiBuilder.OnBuildUi -= Draw.DrawWindow;
+            JobIcons.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
+            setNamePlateHook.Disable();
+            setNamePlateHook.Dispose();
+            raptureAtkThingHook.Disable();
+            raptureAtkThingHook.Dispose();
+            Marshal.FreeHGlobal(emptyPointer);
+            Marshal.FreeHGlobal(namePointer);
+        }
 
         public unsafe IntPtr RaptureAtkThingFunc(RaptureAtkModule* this_var, IntPtr what, IntPtr ever, IntPtr it, IntPtr dont, uint matter, uint really)
         {
+
+
             if (raptk == IntPtr.Zero)
             {
                 raptk = (IntPtr)this_var;
@@ -170,6 +184,7 @@ namespace Job_Icons
             }
 
             return raptureAtkThingHook.Original(this_var, what, ever, it, dont, matter, really);
+
         }
 
         public void AdjustIconPos(IntPtr this_obj)
@@ -186,13 +201,18 @@ namespace Job_Icons
 
         public unsafe IntPtr SetNamePlateFunc(IntPtr this_var, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
         {
-            var actorID = GetActorFromNameplate(this_var);
+
             if (pluginInterface.ClientState.LocalPlayer != null)
             {
-                if (partyList.Contains(actorID))
+                var actorID = GetActorFromNameplate(this_var);
+                if (partyList.Contains(actorID) && actorID != 0)
                 {
                     float scaled = scaler;
                     var pc = GetPC(actorID);
+                    if (pc == null)
+                    {
+                        return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                    }
                     if (!showName) name = emptyPointer;
                     if (!showtitle) title = emptyPointer;
                     if (!showFC) fcName = emptyPointer;
@@ -207,44 +227,30 @@ namespace Job_Icons
                     AdjustIconScale(this_var, scaled);
                     return x;
                 }
-            }
 
-            if (actorID == pluginInterface.ClientState.LocalPlayer.ActorId && debug)
-            {
-                float scaled = scaler;
+                if (actorID == pluginInterface.ClientState.LocalPlayer.ActorId && debug)
+                {
+                    float scaled = scaler;
 
-                if (!showName) name = emptyPointer;
-                if (!showtitle) title = emptyPointer;
-                if (!showFC) fcName = emptyPointer;
+                    if (!showName) name = emptyPointer;
+                    if (!showtitle) title = emptyPointer;
+                    if (!showFC) fcName = emptyPointer;
 
-                if ((role[pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role] > 2)) scaled *= 2;
+                    if ((role[pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role] > 2)) scaled *= 2;
 
+                    scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
+                    var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon((int)pluginInterface.ClientState.LocalPlayer.ClassJob.Id, role[(int)pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role]));
+                    AdjustIconPos(this_var);
+                    AdjustIconScale(this_var, scaled);
+
+                    return x;
+                }
                 scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
-                var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon((int)pluginInterface.ClientState.LocalPlayer.ClassJob.Id, role[(int)pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role]));
-                AdjustIconPos(this_var);
-                AdjustIconScale(this_var, scaled);
-
-                return x;
+                AdjustIconScale(this_var, 1f);
+                return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
             }
-
-            scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
-            AdjustIconScale(this_var, 1f);
             return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
-        }
 
-        public unsafe SeString GetSeStringFromPtr(byte* ptr)
-        {
-            var offset = 0;
-            while (true)
-            {
-                var b = *(ptr + offset);
-                if (b == 0) break;
-                offset += 1;
-            }
-
-            var bytes = new byte[offset];
-            Marshal.Copy(new IntPtr(ptr), bytes, 0, offset);
-            return pluginInterface.SeStringManager.Parse(bytes);
         }
 
         public unsafe IntPtr StringToSeStringPtr(string rawText)
@@ -260,33 +266,43 @@ namespace Job_Icons
 
         public static unsafe int GetActorFromNameplate(IntPtr this_var)
         {
-            if (raptk != IntPtr.Zero)
+            try
             {
-                var npObjPtr = this_var.ToPointer();
-                if (nameplateUIPtr == IntPtr.Zero)
-                {
-                    nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
-                }
 
-                if (nameplateUIPtr != IntPtr.Zero)
+                if (raptk != IntPtr.Zero)
                 {
-                    npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray;
-                }
-
-                if (baseUIObject != IntPtr.Zero)
-                {
-                    if (baseUiProperties != IntPtr.Zero)
+                    var npObjPtr = this_var.ToPointer();
+                    if (nameplateUIPtr == IntPtr.Zero)
                     {
-                        var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
-                        var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
+                        nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
+                    }
 
-                        // PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
-                        return npInfo->ActorID;
+                    if (nameplateUIPtr != IntPtr.Zero)
+                    {
+                        npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray;
+                    }
+
+                    if (baseUIObject != IntPtr.Zero)
+                    {
+                        if (baseUiProperties != IntPtr.Zero)
+                        {
+                            var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
+                            var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
+
+                            // PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
+                            return npInfo->ActorID;
+                        }
                     }
                 }
+                return 0;
+
+            }
+            catch (Exception)
+            {
+                return 0;
             }
 
-            return 0;
+
         }
 
         public static void SaveConfig()
@@ -302,16 +318,7 @@ namespace Job_Icons
             pluginInterface.SavePluginConfig(Configuration);
         }
 
-        public void Dispose()
-        {
-            pluginInterface.CommandManager.RemoveHandler("/jicons");
-            JobIcons.pluginInterface.UiBuilder.OnBuildUi -= Draw.DrawWindow;
-            JobIcons.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
-            setNamePlateHook.Disable();
-            setNamePlateHook.Dispose();
-            Marshal.FreeHGlobal(emptyPointer);
-            Marshal.FreeHGlobal(namePointer);
-        }
+
 
         private void Command(string command, string arguments) => config = !config;
 
