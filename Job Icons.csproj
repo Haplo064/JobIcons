@@ -36,6 +36,9 @@
     <Reference Include="Dalamud">
       <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
     </Reference>
+    <Reference Include="FFXIVClientStructs">
+      <HintPath>..\daem\FFXIVClientStructs\bin\Release\net472\FFXIVClientStructs.dll</HintPath>
+    </Reference>
     <Reference Include="ImGui.NET">
       <HintPath>..\..\..\AppData\Roaming\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
     </Reference>
@@ -54,10 +57,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Draw.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="Structs.cs" />
-    <Compile Include="JobIcons.cs" />
+    <Compile Include="PluginAddressResolver.cs" />
+    <Compile Include="IconSet.cs" />
+    <Compile Include="Job.cs" />
+    <Compile Include="JobIconsGui.cs" />
+    <Compile Include="JobIconsConfiguration.cs" />
+    <Compile Include="JobRole.cs" />
+    <Compile Include="JobIconsPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
