@@ -13,8 +13,10 @@ namespace JobIcons
         {
             try
             {
+
                 if (Job_Icons.JobIcons.pluginInterface.ClientState.LocalPlayer != null)
                 {
+                    Job_Icons.JobIcons.count--;
 
                     if (Job_Icons.JobIcons.config)
                     {
@@ -117,9 +119,10 @@ namespace JobIcons
                         ImGui.End();
                     }
 
-                    if (Job_Icons.JobIcons.enabled)
+                    if (Job_Icons.JobIcons.enabled && Job_Icons.JobIcons.count <= 0)
                     {
-                        if (Job_Icons.JobIcons.pluginInterface.ClientState.LocalPlayer != null)
+                        Job_Icons.JobIcons.count = 0;
+                        if (Job_Icons.JobIcons.pluginInterface.ClientState.LocalPlayer != null && Job_Icons.JobIcons.getUI2ObjByName(Job_Icons.JobIcons.baseUiProperties, "NamePlate", 1) != IntPtr.Zero)
                         {
                             for (var k = 0; k < Job_Icons.JobIcons.pluginInterface.ClientState.Actors.Length; k++)
                             {
@@ -142,7 +145,6 @@ namespace JobIcons
                                     }
                                 }
                             }
-
                             for (int i = 0; i < Job_Icons.JobIcons.partyList.Count; i++)
                             {
                                 if (Job_Icons.JobIcons.isObjectIDInParty(Job_Icons.JobIcons.groupManager, Job_Icons.JobIcons.partyList[i]) == 0)
@@ -151,7 +153,6 @@ namespace JobIcons
                                     i--;
                                 }
                             }
-
                             if ((int)Job_Icons.JobIcons.npObjArray != 0)
                             {
                                 Job_Icons.JobIcons.NPObjects = new List<IntPtr>();
@@ -159,11 +160,11 @@ namespace JobIcons
                                 {
                                     Job_Icons.JobIcons.NPObjects.Add((IntPtr)Job_Icons.JobIcons.npObjArray + (0x70 * i));
                                 }
-
                                 foreach (IntPtr x in Job_Icons.JobIcons.NPObjects)
                                 {
                                     var test = (AddonNamePlate.BakePlateRenderer.NamePlateObject*)x;
-                                    if (!Job_Icons.JobIcons.partyList.Contains(Job_Icons.JobIcons.GetActorFromNameplate(x)) && !Job_Icons.JobIcons.debug)
+                                    var quick = Job_Icons.JobIcons.GetActorFromNameplate(x);
+                                    if (!Job_Icons.JobIcons.partyList.Contains(quick) && !Job_Icons.JobIcons.debug && quick != -1)
                                     {
                                         Job_Icons.JobIcons.scaleIcon(Marshal.ReadIntPtr(x + 24), 1.0001f, 1.0001f);
                                         test->ImageNode1->AtkResNode.ScaleY = 1f;
@@ -174,6 +175,13 @@ namespace JobIcons
                         }
                     }
                 }
+                else
+                {
+                    PluginLog.Log("Up count C");
+                    Job_Icons.JobIcons.count = 100;
+                }
+                PluginLog.Log($"{Job_Icons.JobIcons.count}");
+
 
             }
             catch (Exception e)

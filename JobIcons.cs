@@ -24,6 +24,7 @@ namespace Job_Icons
 
         public static int increase;
         public static float scaler = 1;
+        public static int count = 0;
 
         public static int[] role = { 0, 0, 0, 0, 0 };
         public int[] sets = { 091021, 091521, 092021, 092521, 093021, 093521, 094021, 094521 };
@@ -201,55 +202,60 @@ namespace Job_Icons
 
         public unsafe IntPtr SetNamePlateFunc(IntPtr this_var, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
         {
-
-            if (pluginInterface.ClientState.LocalPlayer != null)
+            try
             {
-                var actorID = GetActorFromNameplate(this_var);
-                if (partyList.Contains(actorID) && actorID != 0)
+                if (pluginInterface.ClientState.LocalPlayer != null)
                 {
-                    float scaled = scaler;
-                    var pc = GetPC(actorID);
-                    if (pc == null)
+                    var actorID = GetActorFromNameplate(this_var);
+                    if (partyList.Contains(actorID) && actorID != 0)
                     {
-                        return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                        float scaled = scaler;
+                        var pc = GetPC(actorID);
+                        if (pc == null)
+                        {
+                            return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                        }
+                        if (!showName) name = emptyPointer;
+                        if (!showtitle) title = emptyPointer;
+                        if (!showFC) fcName = emptyPointer;
+
+                        if ((role[pc.ClassJob.GameData.Role] > 2)) scaled *= 2;
+                        scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
+
+                        var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon(
+                            (int)pc.ClassJob.Id,
+                            role[pc.ClassJob.GameData.Role]));
+                        AdjustIconPos(this_var);
+                        AdjustIconScale(this_var, scaled);
+                        return x;
                     }
-                    if (!showName) name = emptyPointer;
-                    if (!showtitle) title = emptyPointer;
-                    if (!showFC) fcName = emptyPointer;
 
-                    if ((role[pc.ClassJob.GameData.Role] > 2)) scaled *= 2;
-                    scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
+                    if (actorID == pluginInterface.ClientState.LocalPlayer.ActorId && debug)
+                    {
+                        float scaled = scaler;
 
-                    var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon(
-                        (int)pc.ClassJob.Id,
-                        role[pc.ClassJob.GameData.Role]));
-                    AdjustIconPos(this_var);
-                    AdjustIconScale(this_var, scaled);
-                    return x;
-                }
+                        if (!showName) name = emptyPointer;
+                        if (!showtitle) title = emptyPointer;
+                        if (!showFC) fcName = emptyPointer;
 
-                if (actorID == pluginInterface.ClientState.LocalPlayer.ActorId && debug)
-                {
-                    float scaled = scaler;
+                        if ((role[pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role] > 2)) scaled *= 2;
 
-                    if (!showName) name = emptyPointer;
-                    if (!showtitle) title = emptyPointer;
-                    if (!showFC) fcName = emptyPointer;
+                        scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
+                        var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon((int)pluginInterface.ClientState.LocalPlayer.ClassJob.Id, role[(int)pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role]));
+                        AdjustIconPos(this_var);
+                        AdjustIconScale(this_var, scaled);
 
-                    if ((role[pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role] > 2)) scaled *= 2;
-
-                    scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
-                    var x = setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, ClassIcon((int)pluginInterface.ClientState.LocalPlayer.ClassJob.Id, role[(int)pluginInterface.ClientState.LocalPlayer.ClassJob.GameData.Role]));
-                    AdjustIconPos(this_var);
-                    AdjustIconScale(this_var, scaled);
-
-                    return x;
+                        return x;
+                    }
                 }
                 scaleIcon(Marshal.ReadIntPtr(this_var + 24), 1.0001f, 1.0001f);
                 AdjustIconScale(this_var, 1f);
                 return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
             }
-            return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+            catch (Exception e)
+            {
+                return setNamePlateHook.Original(this_var, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+            }
 
         }
 
@@ -268,37 +274,47 @@ namespace Job_Icons
         {
             try
             {
-
-                if (raptk != IntPtr.Zero)
+                if (raptk != IntPtr.Zero && count == 0)
                 {
+                    PluginLog.Log($"Do {count}");
                     var npObjPtr = this_var.ToPointer();
-                    if (nameplateUIPtr == IntPtr.Zero)
-                    {
-                        nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
-                    }
+                    nameplateUIPtr = getUI2ObjByName(baseUiProperties, "NamePlate", 1);
 
                     if (nameplateUIPtr != IntPtr.Zero)
                     {
+                        count = 0;
                         npObjArray = ((AddonNamePlate*)nameplateUIPtr)->NamePlateObjectArray;
-                    }
-
-                    if (baseUIObject != IntPtr.Zero)
-                    {
-                        if (baseUiProperties != IntPtr.Zero)
+                        if (npObjArray == null)
                         {
-                            var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
-                            var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
-
-                            // PluginLog.Log($"SetNamePlate thisptr {(long)npObjPtr:X} index {npIndex} npinfo ptr {(long)npInfo:X} actorID {npInfo->ActorID:X}");
-                            return npInfo->ActorID;
+                            PluginLog.Log("Up count A");
+                            count = 100;
+                            return -1;
+                        }
+                        if (baseUIObject != IntPtr.Zero)
+                        {
+                            if (baseUiProperties != IntPtr.Zero)
+                            {
+                                var npIndex = ((long)npObjPtr - (long)npObjArray) / 0x70;
+                                var npInfo = (NamePlateInfo*)(RaptureAtkModule->NamePlateInfo) + npIndex;
+                                var x = npInfo->ActorID;
+                                return x;
+                            }
                         }
                     }
+                    else
+                    {
+                        PluginLog.Log("Up count B");
+                        count = 100;
+                    }
                 }
+                PluginLog.Log($"Don't: {count}");
+                count--;
                 return 0;
 
             }
             catch (Exception)
             {
+                PluginLog.Log("Error");
                 return 0;
             }
 
