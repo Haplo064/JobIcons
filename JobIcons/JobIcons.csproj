@@ -74,7 +74,8 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="ILRepack" AfterTargets="Build" Condition=" '$(Configuration)' == 'Release' ">
+  <!--<Target Name="ILRepack" AfterTargets="Build" Condition=" '$(Configuration)' == 'Release' ">-->
+  <Target Name="ILRepack" AfterTargets="Build">
     <ItemGroup>
       <InputAssemblies Include="$(TargetPath)" />
       <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)" />
@@ -82,16 +83,17 @@
     <Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(DalamudLibPath) /out:$(TargetDir)$(TargetFileName) @(InputAssemblies, ' ')" />
   </Target>
 
-  <Target Name="CleanOutDir" AfterTargets="ILRepack" Condition=" '$(Configuration)' == 'Release' ">
-      <ItemGroup>
+  <!--<Target Name="CleanOutDir" AfterTargets="ILRepack" Condition=" '$(Configuration)' == 'Release' ">-->
+  <Target Name="CleanOutDir" AfterTargets="ILRepack">
+    <ItemGroup>
       <DeleteAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)" />
     </ItemGroup>
-    <Message Text="Deleting @(DeleteAssemblies)" Importance="high"/>
+    <Message Text="Deleting @(DeleteAssemblies)" Importance="high" />
     <Delete Files="@(DeleteAssemblies)" />
   </Target>
 
   <Target Name="PackagePlugin" AfterTargets="CleanOutDir" Condition=" '$(Configuration)' == 'Release' ">
-    <Message Text="Starting DalamudPackager" Importance="high"/>
+    <Message Text="Starting DalamudPackager" Importance="high" />
     <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(OutputPath)" AssemblyName="$(AssemblyName)" VersionComponents="4" MakeZip="true" />
   </Target>
 </Project>
