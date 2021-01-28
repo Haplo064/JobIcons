@@ -3,11 +3,13 @@ using Dalamud.Game.Chat.SeStringHandling.Payloads;
 using Dalamud.Game.Command;
 using Dalamud.Hooking;
 using Dalamud.Plugin;
-using JobIcons;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
-using FFXIVClientStructs.FFXIV.Client.UI;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace JobIcons
 {
@@ -65,6 +67,8 @@ namespace JobIcons
 
             Interface.ClientState.OnLogout += OnLogout;
 
+            Task.Run(() => FixNonPlayerCharacterNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
+
             PluginGui = new JobIconsGui(this);
         }
 
@@ -92,6 +96,70 @@ namespace JobIcons
         }
 
         private void CommandHandler(string command, string arguments) => PluginGui.ToggleConfigWindow();
+
+
+        #region fix non-pc nameplates
+
+        private CancellationTokenSource FixNonPlayerCharacterNamePlatesTokenSource = new CancellationTokenSource();
+
+        private void FixNonPlayerCharacterNamePlates(CancellationToken token)
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    FixNonPlayerCharacterNamePlates();
+                    Task.Delay(100, token).Wait(token);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                PluginLog.Error(ex, "Non-PC Updater loop has crashed");
+            }
+        }
+
+        private unsafe void FixNonPlayerCharacterNamePlates()
+        {
+            var partyMembers = Interface.ClientState.Actors
+                .Where(a => IsPartyMember1(a) || IsPartyMember2(a.ActorId))
+                .Select(a => a as Dalamud.Game.ClientState.Actors.Types.PlayerCharacter)
+                .Where(a => a != null).ToArray();
+            var partyMemberIDs = partyMembers.Select(pm => pm.ActorId).ToArray();
+
+            var addonPtr = AddonNamePlatePtr;
+            if (addonPtr == IntPtr.Zero)
+                return;
+
+            var addon = (AddonNamePlate*)addonPtr;
+
+            var namePlateObjectArray = addon->NamePlateObjectArray;
+            if (namePlateObjectArray == null)
+                return;
+
+            for (int i = 0; i < 50; i++)
+            {
+                var namePlateObject = &namePlateObjectArray[i];
+                if (namePlateObject->ComponentNode == null || !namePlateObject->ComponentNode->AtkResNode.IsVisible)
+                    continue;
+
+                var namePlateInfo = GetNamePlateInfo(i);
+                if (namePlateInfo == null)
+                    continue;
+
+                var actorID = namePlateInfo->ActorID;
+                var isLocalPlayer = IsLocalPlayer(actorID);
+                var isPartyMember = partyMemberIDs.Contains(actorID);
+
+                if (!isLocalPlayer && !isPartyMember)
+                {
+                    AdjustIconScale(namePlateObject, 1.0001f);
+                }
+            }
+        }
+
+        #endregion
+
 
         #region internals
 
@@ -132,7 +200,7 @@ namespace JobIcons
             }
         }
 
-        internal unsafe int GetNamePlateObjectIndex(AddonNamePlate.BakePlateRenderer.NamePlateObject* namePlateObject)
+        internal unsafe int GetNamePlateObjectIndex(AddonNamePlate.NamePlateObject* namePlateObject)
         {
             if (namePlateObject == null || AddonNamePlatePtr == null)
                 return -1;
@@ -157,7 +225,7 @@ namespace JobIcons
                 return -1;
 
             var namePlateObjectAddr = (long)namePlateObject;
-            var namePlateObjectSize = Marshal.SizeOf<AddonNamePlate.BakePlateRenderer.NamePlateObject>();
+            var namePlateObjectSize = Marshal.SizeOf<AddonNamePlate.NamePlateObject>();
             var index = (namePlateObjectAddr - baseNamePlateObjectAddr) / namePlateObjectSize;
 
             return (int)index;
@@ -174,7 +242,7 @@ namespace JobIcons
             return namePlateInfo;
         }
 
-        internal unsafe RaptureAtkModule.NamePlateInfo* GetNamePlateInfo(AddonNamePlate.BakePlateRenderer.NamePlateObject* namePlateObject)
+        internal unsafe RaptureAtkModule.NamePlateInfo* GetNamePlateInfo(AddonNamePlate.NamePlateObject* namePlateObject)
         {
             var namePlateObjectIndex = GetNamePlateObjectIndex(namePlateObject);
             if (namePlateObjectIndex == -1)
@@ -209,7 +277,7 @@ namespace JobIcons
             return GetIconSet(jobID).GetIconID(jobID);
         }
 
-        private unsafe void AdjustIconPos(AddonNamePlate.BakePlateRenderer.NamePlateObject* namePlateObject)
+        private unsafe void AdjustIconPos(AddonNamePlate.NamePlateObject* namePlateObject)
         {
             var imageNodePtr = new IntPtr(namePlateObject->ImageNode1);
             //SetNodePosition(imageNodePtr, Configuration.XAdjust, Configuration.YAdjust);
@@ -217,7 +285,7 @@ namespace JobIcons
             namePlateObject->IconYAdjust = Configuration.YAdjust;
         }
 
-        internal unsafe void AdjustIconScale(AddonNamePlate.BakePlateRenderer.NamePlateObject* namePlateObject, float scale)
+        internal unsafe void AdjustIconScale(AddonNamePlate.NamePlateObject* namePlateObject, float scale)
         {
             var imageNodePtr = new IntPtr(namePlateObject->ImageNode1);
             SetNodeScale(imageNodePtr, scale, scale);
@@ -233,7 +301,7 @@ namespace JobIcons
             if (!Configuration.Enabled)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
-            var namePlateObject = (AddonNamePlate.BakePlateRenderer.NamePlateObject*)namePlateObjectPtr;
+            var namePlateObject = (AddonNamePlate.NamePlateObject*)namePlateObjectPtr;
 
             var namePlateInfo = GetNamePlateInfo(namePlateObject);
             if (namePlateInfo == null)

@@ -1,9 +1,9 @@
-﻿using ImGuiNET;
+﻿using FFXIVClientStructs.FFXIV.Client.UI;
+using ImGuiNET;
 using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using FFXIVClientStructs.FFXIV.Client.UI;
 
 namespace JobIcons
 {
@@ -45,7 +45,7 @@ namespace JobIcons
         private unsafe void OnBuildUi()
         {
             OnBuildUi_Config();
-            OnBuildUi_Debug();
+            //OnBuildUi_Debug();
         }
 
         private void OnBuildUi_Config()
@@ -217,11 +217,14 @@ namespace JobIcons
         {
             if (ImGui.BeginTabItem("About"))
             {
-                ImGui.TextWrapped("Hi! Thanks for trying out my plugin. It's mostly done, but can always use improvement. Here's a quick guide to how the config works.");
+                ImGui.TextWrapped("");
                 ImGui.TextWrapped("- The scale is 1.0 for 'default', 2.0 for double etc.");
                 ImGui.TextWrapped("- Use X and Y Adjust to make the icon appear where you want, relative to the player.");
                 ImGui.TextWrapped("- The icons only apply to party members.");
                 ImGui.TextWrapped("- If there is a problem, let me (Haplo) know on Discord.");
+                ImGui.TextWrapped("\nShoutouts:");
+                ImGui.TextWrapped("Big shoutout to daemitus for the second re-write of the code. Without them, many features would have been much harder!");
+                ImGui.TextWrapped("And shoutouts to aers, adam, caraxi, goat and many others for allowing me to pester them for simple issues.");
                 ImGui.EndTabItem();
             }
         }
