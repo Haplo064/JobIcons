@@ -1,5 +1,5 @@
-.gitattributes
 .vs/
-obj/
 bin/
-lib/FFXIVClientStructs
+obj/
+.gitattributes
+lib/FFXIVClientStructs/
