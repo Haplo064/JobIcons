@@ -2,7 +2,6 @@
 using Dalamud.Game.Chat.SeStringHandling.Payloads;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -11,6 +10,8 @@ namespace JobIcons
 {
     internal class XivApi : IDisposable
     {
+        public static int ThreadID => System.Threading.Thread.CurrentThread.ManagedThreadId;
+
         private readonly DalamudPluginInterface Interface;
         private readonly PluginAddressResolver Address;
 
@@ -41,6 +42,8 @@ namespace JobIcons
 
             Interface.ClientState.OnLogout += OnLogout_ResetRaptureAtkModule;
         }
+
+        public static void DisposeInstance() => Instance.Dispose();
 
         public void Dispose()
         {
@@ -112,19 +115,34 @@ namespace JobIcons
 
         internal static bool IsLocalPlayer(int actorID)
         {
-            return Instance.Interface.ClientState.LocalPlayer?.ActorId == actorID;
+            PluginLog.Information($"[{ThreadID}][IsLocalPlayer] Enter");
+            var result = Instance.Interface.ClientState.LocalPlayer?.ActorId == actorID;
+            PluginLog.Information($"[{ThreadID}][] Exit");
+            return result;
         }
 
         internal static bool IsPartyMember(int actorID)
         {
-            return Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+            PluginLog.Information($"[{ThreadID}]IsPartyMember] Enter");
+            var result = Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+            PluginLog.Information($"[{ThreadID}][IsPartyMember] Exit");
+            return result;
         }
 
         internal class SafeAddonNamePlate
         {
             private readonly DalamudPluginInterface Interface;
 
-            public IntPtr Pointer => Interface.Framework.Gui.GetUiObjectByName("NamePlate", 1);
+            public IntPtr Pointer
+            {
+                get
+                {
+                    PluginLog.Information($"[{ThreadID}]SafeAddonNamePlate.Pointer] Enter");
+                    var result = Interface.Framework.Gui.GetUiObjectByName("NamePlate", 1);
+                    PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.Pointer] Exit");
+                    return result;
+                }
+            }
 
             public SafeAddonNamePlate(DalamudPluginInterface pluginInterface)
             {
@@ -133,6 +151,7 @@ namespace JobIcons
 
             public unsafe SafeNamePlateObject GetNamePlateObject(int index)
             {
+                PluginLog.Information($"[{ThreadID}]SafeAddonNamePlate.GetNamePlateObject] Enter");
                 var addon = AsUnsafe();
                 if (addon == null)
                 {
@@ -154,18 +173,23 @@ namespace JobIcons
                     return null;
                 }
 
-                return new SafeNamePlateObject(new IntPtr(npObject), index);
+                var result = new SafeNamePlateObject(new IntPtr(npObject), index);
+                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.GetNamePlateObject] Exit");
+                return result;
             }
 
             public unsafe AddonNamePlate* AsUnsafe()
             {
+                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.AsUnsafe] Enter");
                 var addonPtr = Pointer;
                 if (addonPtr == null)
                 {
                     PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
                     return null;
                 }
-                return (AddonNamePlate*)addonPtr;
+                var result = (AddonNamePlate*)addonPtr;
+                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.AsUnsafe] Exit");
+                return result;
             }
         }
 
@@ -185,6 +209,7 @@ namespace JobIcons
             {
                 get
                 {
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.Index] Enter");
                     if (_Index == -1)
                     {
                         var addon = GetSafeAddonNamePlate();
@@ -206,8 +231,9 @@ namespace JobIcons
 
                         _Index = (int)index;
                     }
-
-                    return _Index;
+                    var result = _Index;
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.Index] Exit");
+                    return result;
                 }
             }
 
@@ -215,6 +241,7 @@ namespace JobIcons
             {
                 get
                 {
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.NamePlateInfo] Enter");
                     if (_NamePlateInfo == null)
                     {
                         var rapturePtr = RaptureAtkModulePtr;
@@ -238,7 +265,9 @@ namespace JobIcons
                         */
 
                     }
-                    return _NamePlateInfo;
+                    var result = _NamePlateInfo;
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.NamePlateInfo] Exit");
+                    return result;
                 }
             }
 
@@ -246,6 +275,7 @@ namespace JobIcons
             {
                 get
                 {
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsVisible] Enter");
                     var npObject = AsUnsafe();
                     if (npObject == null)
                     {
@@ -253,7 +283,9 @@ namespace JobIcons
                         return false;
                     }
 
-                    return npObject->IsVisible;
+                    var result = npObject->IsVisible;
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsVisible] Exit");
+                    return result;
                 }
             }
 
@@ -261,6 +293,7 @@ namespace JobIcons
             {
                 get
                 {
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsLocalPlayer] Enter");
                     var npObject = AsUnsafe();
                     if (npObject == null)
                     {
@@ -268,12 +301,15 @@ namespace JobIcons
                         return false;
                     }
 
-                    return npObject->IsLocalPlayer;
+                    var result = npObject->IsLocalPlayer;
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsLocalPlayer] Exit");
+                    return result;
                 }
             }
 
             public unsafe void SetIconScale(float scale)
             {
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconScale] Enter");
                 var npObject = AsUnsafe();
                 if (npObject == null)
                 {
@@ -291,10 +327,12 @@ namespace JobIcons
                 Instance.SetNodeScale(new IntPtr(imageNode), scale, scale);
                 //imageNode->AtkResNode.ScaleX = scale;
                 //imageNode->AtkResNode.ScaleY = scale;
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconScale] Exit");
             }
 
             public unsafe void SetIconPosition(short x, short y)
             {
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconPosition] Enter");
                 var npObject = AsUnsafe();
                 if (npObject == null)
                 {
@@ -314,17 +352,21 @@ namespace JobIcons
                 npObject->IconXAdjust = x;
                 npObject->IconYAdjust = y;
                 //Instance.SetNodePosition(new IntPtr(imageNode), x, y);
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconPosition] Exit");
             }
 
             public unsafe AddonNamePlate.NamePlateObject* AsUnsafe()
             {
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.AsUnsafe] Enter");
                 var npObjectPtr = Pointer;
                 if (npObjectPtr == null)
                 {
                     PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
                     return null;
                 }
-                return (AddonNamePlate.NamePlateObject*)npObjectPtr;
+                var result = (AddonNamePlate.NamePlateObject*)npObjectPtr;
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.AsUnsafe] Exit");
+                return result;
             }
         }
 
@@ -341,25 +383,31 @@ namespace JobIcons
             {
                 get
                 {
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Enter");
                     var npInfo = AsUnsafe();
                     if (npInfo == null)
                     {
                         PluginLog.Debug($"[{GetType().Name}] NamePlateInfo was null");
                         return -1;
                     }
-                    return npInfo->ActorID;
+                    var result = npInfo->ActorID;
+                    PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Exit");
+                    return result;
                 }
             }
 
             public unsafe RaptureAtkModule.NamePlateInfo* AsUnsafe()
             {
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Enter");
                 var npInfoPtr = Pointer;
                 if (npInfoPtr == null)
                 {
                     PluginLog.Debug($"[{GetType().Name}] NamePlateInfo was null");
                     return null;
                 }
-                return (RaptureAtkModule.NamePlateInfo*)npInfoPtr;
+                var result = (RaptureAtkModule.NamePlateInfo*)npInfoPtr;
+                PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Exit");
+                return result;
             }
         }
     }

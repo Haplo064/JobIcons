@@ -238,6 +238,7 @@ namespace JobIcons
 
         private unsafe void OnBuildUi_Debug()
         {
+            Dalamud.Plugin.PluginLog.Information($"[{XivApi.ThreadID}][OnBuildUi_Debug] Enter");
             if (isImguiDebugOpen)
             {
                 ImGui.SetNextWindowSize(new Vector2(500, 500), ImGuiCond.FirstUseEver);
@@ -369,6 +370,7 @@ namespace JobIcons
                 }
                 ImGui.End();
             }
+            Dalamud.Plugin.PluginLog.Information($"[{XivApi.ThreadID}][OnBuildUi_Debug] Exit");
         }
 
         private void DebugTableCell(string value, float[] sizes, bool nextColumn = true)

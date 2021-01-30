@@ -1,12 +1,7 @@
-﻿using Dalamud.Game.Chat.SeStringHandling;
-using Dalamud.Game.Chat.SeStringHandling.Payloads;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using Dalamud.Hooking;
 using Dalamud.Plugin;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -72,6 +67,8 @@ namespace JobIcons
             SetNamePlateHook.Disable();
             SetNamePlateHook.Dispose();
 
+            XivApi.DisposeInstance();
+            FixNonPlayerCharacterNamePlatesTokenSource.Cancel();
             Marshal.FreeHGlobal(EmptySeStringPtr);
         }
 
@@ -101,6 +98,7 @@ namespace JobIcons
 
         private void FixNonPlayerCharacterNamePlates()
         {
+            PluginLog.Information($"[{XivApi.ThreadID}][FixNonPlayerCharacterNamePlates] Enter");
             var addon = XivApi.GetSafeAddonNamePlate();
             for (int i = 0; i < 50; i++)
             {
@@ -123,6 +121,7 @@ namespace JobIcons
                 {
                     //npObject.SetIconScale(1);
                 }
+                PluginLog.Information($"[{XivApi.ThreadID}][FixNonPlayerCharacterNamePlates] Exit");
             }
         }
 
@@ -130,25 +129,50 @@ namespace JobIcons
 
         internal unsafe IntPtr SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
-            //if (!Configuration.Enabled)
-            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            IntPtr result;
+            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Enter");
+
+            if (!Configuration.Enabled)
+            {
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
+                return result;
+            }
 
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
 
             var npInfo = npObject.NamePlateInfo;
             if (npInfo == null)
-                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            {
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
+                return result;
+            }
 
             var actorID = npInfo.AsUnsafe()->ActorID;
             if (actorID == -1)
-                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            {
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
+                return result;
+            }
 
 
             var pc = GetPlayerCharacter(actorID);
             if (pc == null)
             {
                 npObject.SetIconScale(1);
-                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
+                return result;
             }
             var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
             var isPartyMember = XivApi.IsPartyMember(actorID);
@@ -169,45 +193,44 @@ namespace JobIcons
                     fcName = EmptySeStringPtr;
 
                 npObject.SetIconScale(scale);
-                var result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
                 npObject.SetIconScale(scale);
 
                 npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
 
+                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
                 return result;
             }
 
             npObject.SetIconScale(1);
-            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-        }
-
-        internal string GetActorName(int actorId)
-        {
-            foreach (var actor in Interface.ClientState.Actors)
-            {
-                if (actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
-                {
-                    if (pc.ActorId == actorId)
-                        return pc.Name;
-                }
-            }
-            return "";
+            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
+            result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
+            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
+            return result;
         }
 
         internal Dalamud.Game.ClientState.Actors.Types.PlayerCharacter GetPlayerCharacter(int actorID)
         {
+            PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Enter"); 
             foreach (var actor in Interface.ClientState.Actors)
             {
                 if (actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
                 {
                     if (actorID == pc.ActorId)
+                    {
+                        PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Exit");
                         return pc;
+                    }
                 }
             }
+            PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Exit");
             return null;
         }
 
-        internal bool IsPartyMember1(Dalamud.Game.ClientState.Actors.Types.Actor actor)
+        internal bool IsPartyMember(Dalamud.Game.ClientState.Actors.Types.Actor actor)
         {
             var flag = Marshal.ReadByte(actor.Address + 0x1980);
             return (flag & 16) > 0;
