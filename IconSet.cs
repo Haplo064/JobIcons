@@ -94,15 +94,15 @@ namespace JobIcons
             IconSets[name] = new IconSet(name, iconMethod, scaleMultiplier);
         }
 
-        private static Dictionary<string, IconSet> IconSets = new Dictionary<string, IconSet>();
+        private static readonly Dictionary<string, IconSet> IconSets = new Dictionary<string, IconSet>();
 
         #endregion
 
         public string Name { get; private set; }
         public float ScaleMultiplier { get; private set; }
 
-        private int[] Icons;
-        private Func<Job, int> IconMethod;
+        private readonly int[] Icons;
+        private readonly Func<Job, int> IconMethod;
 
         private IconSet(string name, int[] icons, float scaleMultiplier)
         {
