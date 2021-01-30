@@ -98,7 +98,6 @@ namespace JobIcons
 
         private void FixNonPlayerCharacterNamePlates()
         {
-            PluginLog.Information($"[{XivApi.ThreadID}][FixNonPlayerCharacterNamePlates] Enter");
             var addon = XivApi.GetSafeAddonNamePlate();
             for (int i = 0; i < 50; i++)
             {
@@ -110,74 +109,68 @@ namespace JobIcons
                 if (npInfo == null)
                     continue;
 
-                var actorID = npInfo.ActorID;
+                var actorID = npInfo.Data.ActorID;
                 if (actorID == -1)
                     continue;
 
-                var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
-                var isPartyMember = XivApi.IsPartyMember(actorID);
-
-                if (!isLocalPlayer && !isPartyMember)
-                {
-                    //npObject.SetIconScale(1);
+                var actor = GetPlayerCharacter(actorID);
+                if (actor == null)
+                {  // Not a PlayerCharacter
+                    npObject.SetIconScale(1);
                 }
-                PluginLog.Information($"[{XivApi.ThreadID}][FixNonPlayerCharacterNamePlates] Exit");
             }
         }
 
         #endregion
 
-        internal unsafe IntPtr SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
+        internal IntPtr SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
-            IntPtr result;
-            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Enter");
-
-            if (!Configuration.Enabled)
+            try
             {
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
-                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
-                return result;
+                return SetNamePlate(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Error(ex, $"SetNamePlateDetour encountered a critical error");
             }
 
+            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+        }
+
+        internal IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
+        {
+            IntPtr result;
+
+            if (!Configuration.Enabled)
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
+            if (npObject == null)
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
             var npInfo = npObject.NamePlateInfo;
             if (npInfo == null)
-            {
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
-                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
-                return result;
-            }
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
-            var actorID = npInfo.AsUnsafe()->ActorID;
+            var actorID = npInfo.Data.ActorID;
             if (actorID == -1)
-            {
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
-                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
-                return result;
-            }
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
 
             var pc = GetPlayerCharacter(actorID);
-            if (pc == null)
+            // a PC can have a JobID of 0 occasionally, throwing an ArgumentException from the IconSet getter
+            // Should probably find a func that can give this data
+            if (pc == null || pc?.ClassJob.Id == 0)
             {
                 npObject.SetIconScale(1);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
-                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
-                return result;
+                // TODO: Cache actorIDs, use last known icon?
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             }
-            var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
-            var isPartyMember = XivApi.IsPartyMember(actorID);
 
-            if ((Configuration.SelfIcon && isLocalPlayer) || isPartyMember)
+            if ((Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
+                (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
+                (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
+                Configuration.EveryoneElseIcons)
             {
                 var iconSet = Configuration.GetIconSet(pc.ClassJob.Id);
                 var scale = Configuration.Scale * iconSet.ScaleMultiplier;
@@ -193,40 +186,23 @@ namespace JobIcons
                     fcName = EmptySeStringPtr;
 
                 npObject.SetIconScale(scale);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
                 result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
                 npObject.SetIconScale(scale);
 
                 npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
-
-                PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
                 return result;
             }
 
             npObject.SetIconScale(1);
-            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Enter");
-            result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour.Hook] Exit");
-            PluginLog.Information($"[{XivApi.ThreadID}][SetNamePlateDetour] Exit");
-            return result;
+            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
         }
 
         internal Dalamud.Game.ClientState.Actors.Types.PlayerCharacter GetPlayerCharacter(int actorID)
         {
-            PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Enter"); 
             foreach (var actor in Interface.ClientState.Actors)
-            {
                 if (actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
-                {
                     if (actorID == pc.ActorId)
-                    {
-                        PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Exit");
                         return pc;
-                    }
-                }
-            }
-            PluginLog.Information($"[{XivApi.ThreadID}][GetPlayerCharacter] Exit");
             return null;
         }
 

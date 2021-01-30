@@ -1,7 +1,9 @@
 ﻿using Dalamud.Game.Chat.SeStringHandling;
 using Dalamud.Game.Chat.SeStringHandling.Payloads;
 using Dalamud.Plugin;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -18,6 +20,7 @@ namespace JobIcons
         private readonly SetNamePlateDelegate SetNamePlate;
         private readonly Framework_GetUIModuleDelegate GetUIModule;
         private readonly GroupManager_IsObjectIDInPartyDelegate IsObjectIDInParty;
+        private readonly GroupManager_IsObjectIDInAllianceDelegate IsObjectIDInAlliance;
         private readonly AtkResNode_SetScaleDelegate SetNodeScale;
         private readonly AtkResNode_SetPositionShortDelegate SetNodePosition;
 
@@ -36,6 +39,7 @@ namespace JobIcons
             SetNamePlate = Marshal.GetDelegateForFunctionPointer<SetNamePlateDelegate>(address.AddonNamePlate_SetNamePlatePtr);
             GetUIModule = Marshal.GetDelegateForFunctionPointer<Framework_GetUIModuleDelegate>(address.Framework_GetUIModulePtr);
             IsObjectIDInParty = Marshal.GetDelegateForFunctionPointer<GroupManager_IsObjectIDInPartyDelegate>(address.GroupManager_IsObjectIDInPartyPtr);
+            IsObjectIDInAlliance = Marshal.GetDelegateForFunctionPointer<GroupManager_IsObjectIDInAllianceDelegate>(address.GroupManager_IsObjectIDInAlliancePtr);
             SetNodeScale = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetScaleDelegate>(address.AtkResNode_SetScalePtr);
             SetNodePosition = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetPositionShortDelegate>(address.AtkResNode_SetPositionShortPtr);
             EmptySeStringPtr = StringToSeStringPtr("");
@@ -66,8 +70,8 @@ namespace JobIcons
 
                     unsafe
                     {
-                        var uiModule = (UIModule*)uiModulePtr;
-                        var UIModule_GetRaptureAtkModuleAddress = new IntPtr(uiModule->vfunc[7]);
+                        var uiModule = *(UIModule*)uiModulePtr;
+                        var UIModule_GetRaptureAtkModuleAddress = new IntPtr(uiModule.vfunc[7]);
                         var GetRaptureAtkModule = Marshal.GetDelegateForFunctionPointer<UIModule_GetRaptureAtkModuleDelegate>(UIModule_GetRaptureAtkModuleAddress);
                         _RaptureAtkModulePtr = GetRaptureAtkModule(uiModulePtr);
                     }
@@ -113,36 +117,17 @@ namespace JobIcons
 
         internal static SafeAddonNamePlate GetSafeAddonNamePlate() => new SafeAddonNamePlate(Instance.Interface);
 
-        internal static bool IsLocalPlayer(int actorID)
-        {
-            PluginLog.Information($"[{ThreadID}][IsLocalPlayer] Enter");
-            var result = Instance.Interface.ClientState.LocalPlayer?.ActorId == actorID;
-            PluginLog.Information($"[{ThreadID}][] Exit");
-            return result;
-        }
+        internal static bool IsLocalPlayer(int actorID) => Instance.Interface.ClientState.LocalPlayer?.ActorId == actorID;
 
-        internal static bool IsPartyMember(int actorID)
-        {
-            PluginLog.Information($"[{ThreadID}]IsPartyMember] Enter");
-            var result = Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
-            PluginLog.Information($"[{ThreadID}][IsPartyMember] Exit");
-            return result;
-        }
+        internal static bool IsPartyMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+
+        internal static bool IsAllianceMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
 
         internal class SafeAddonNamePlate
         {
             private readonly DalamudPluginInterface Interface;
 
-            public IntPtr Pointer
-            {
-                get
-                {
-                    PluginLog.Information($"[{ThreadID}]SafeAddonNamePlate.Pointer] Enter");
-                    var result = Interface.Framework.Gui.GetUiObjectByName("NamePlate", 1);
-                    PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.Pointer] Exit");
-                    return result;
-                }
-            }
+            public IntPtr Pointer => Interface.Framework.Gui.GetUiObjectByName("NamePlate", 1);
 
             public SafeAddonNamePlate(DalamudPluginInterface pluginInterface)
             {
@@ -151,57 +136,37 @@ namespace JobIcons
 
             public unsafe SafeNamePlateObject GetNamePlateObject(int index)
             {
-                PluginLog.Information($"[{ThreadID}]SafeAddonNamePlate.GetNamePlateObject] Enter");
-                var addon = AsUnsafe();
-                if (addon == null)
+                if (Pointer == IntPtr.Zero)
                 {
                     PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
                     return null;
                 }
 
-                var npObjectArray = addon->NamePlateObjectArray;
-                if (npObjectArray == null)
+                var npObjectArrayPtrPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate), nameof(AddonNamePlate.NamePlateObjectArray)).ToInt32();
+                var npObjectArrayPtr = Marshal.ReadIntPtr(npObjectArrayPtrPtr);
+                if (npObjectArrayPtr == IntPtr.Zero)
                 {
                     PluginLog.Debug($"[{GetType().Name}] NamePlateObjectArray was null");
                     return null;
                 }
 
-                var npObject = &npObjectArray[index];
-                if (npObject == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                    return null;
-                }
-
-                var result = new SafeNamePlateObject(new IntPtr(npObject), index);
-                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.GetNamePlateObject] Exit");
-                return result;
-            }
-
-            public unsafe AddonNamePlate* AsUnsafe()
-            {
-                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.AsUnsafe] Enter");
-                var addonPtr = Pointer;
-                if (addonPtr == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
-                    return null;
-                }
-                var result = (AddonNamePlate*)addonPtr;
-                PluginLog.Information($"[{ThreadID}][SafeAddonNamePlate.AsUnsafe] Exit");
-                return result;
+                var npObjectPtr = npObjectArrayPtr + Marshal.SizeOf(typeof(AddonNamePlate.NamePlateObject)) * index;
+                return new SafeNamePlateObject(npObjectPtr, index);
             }
         }
 
         internal class SafeNamePlateObject
         {
-            public IntPtr Pointer { get; private set; }
+            public readonly IntPtr Pointer;
+            public readonly AddonNamePlate.NamePlateObject Data;
+
             private int _Index;
             private SafeNamePlateInfo _NamePlateInfo;
 
             public SafeNamePlateObject(IntPtr pointer, int index = -1)
             {
                 Pointer = pointer;
+                Data = Marshal.PtrToStructure<AddonNamePlate.NamePlateObject>(pointer);
                 _Index = index;
             }
 
@@ -209,10 +174,9 @@ namespace JobIcons
             {
                 get
                 {
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.Index] Enter");
                     if (_Index == -1)
                     {
-                        var addon = GetSafeAddonNamePlate();
+                        var addon = XivApi.GetSafeAddonNamePlate();
                         var npObject0 = addon.GetNamePlateObject(0);
                         if (npObject0 == null)
                         {
@@ -231,9 +195,7 @@ namespace JobIcons
 
                         _Index = (int)index;
                     }
-                    var result = _Index;
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.Index] Exit");
-                    return result;
+                    return _Index;
                 }
             }
 
@@ -241,174 +203,111 @@ namespace JobIcons
             {
                 get
                 {
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.NamePlateInfo] Enter");
                     if (_NamePlateInfo == null)
                     {
-                        var rapturePtr = RaptureAtkModulePtr;
+                        var rapturePtr = XivApi.RaptureAtkModulePtr;
                         if (rapturePtr == IntPtr.Zero)
                         {
                             PluginLog.Debug($"[{GetType().Name}] RaptureAtkModule was null");
                             return null;
                         }
 
-                        unsafe
-                        {
-                            var rapture = (RaptureAtkModule*)rapturePtr;
-                            var npInfo = &(&rapture->NamePlateInfoArray)[Index];
-                            _NamePlateInfo = new SafeNamePlateInfo(new IntPtr(npInfo));
-                        }
-
-                        /*
-                        var npInfoArrayPtr = rapture + Marshal.OffsetOf(typeof(RaptureAtkModule), nameof(RaptureAtkModule.NamePlateInfoArray)).ToInt32();
+                        var npInfoArrayPtr = XivApi.RaptureAtkModulePtr + Marshal.OffsetOf(typeof(RaptureAtkModule), nameof(RaptureAtkModule.NamePlateInfoArray)).ToInt32();
                         var npInfoPtr = npInfoArrayPtr + Marshal.SizeOf(typeof(RaptureAtkModule.NamePlateInfo)) * Index;
                         _NamePlateInfo = new SafeNamePlateInfo(npInfoPtr);
-                        */
-
                     }
-                    var result = _NamePlateInfo;
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.NamePlateInfo] Exit");
-                    return result;
+                    return _NamePlateInfo;
                 }
             }
 
-            public unsafe bool IsVisible
+            #region Getters
+
+            public IntPtr IconImageNodeAddress => Marshal.ReadIntPtr(Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconImageNode)).ToInt32());
+
+            public AtkImageNode IconImageNode => Marshal.PtrToStructure<AtkImageNode>(IconImageNodeAddress);
+
+            #endregion
+
+            public unsafe bool IsVisible => Data.IsVisible;
+
+            public unsafe bool IsLocalPlayer => Data.IsLocalPlayer;
+
+            public void SetIconScale(float scale)
             {
-                get
-                {
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsVisible] Enter");
-                    var npObject = AsUnsafe();
-                    if (npObject == null)
-                    {
-                        PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                        return false;
-                    }
+                Instance.SetNodeScale(IconImageNodeAddress, scale, scale);
+                
+                //var imageNodePtr = IconImageNodeAddress;
+                //var resNodePtr = imageNodePtr + Marshal.OffsetOf(typeof(AtkImageNode), nameof(AtkImageNode.AtkResNode)).ToInt32();
+                //var scaleXPtr = resNodePtr + Marshal.OffsetOf(typeof(AtkResNode), nameof(AtkResNode.ScaleX)).ToInt32();
+                //var scaleYPtr = resNodePtr + Marshal.OffsetOf(typeof(AtkResNode), nameof(AtkResNode.ScaleY)).ToInt32();
 
-                    var result = npObject->IsVisible;
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsVisible] Exit");
-                    return result;
-                }
-            }
-
-            public unsafe bool IsLocalPlayer
-            {
-                get
-                {
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsLocalPlayer] Enter");
-                    var npObject = AsUnsafe();
-                    if (npObject == null)
-                    {
-                        PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                        return false;
-                    }
-
-                    var result = npObject->IsLocalPlayer;
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.IsLocalPlayer] Exit");
-                    return result;
-                }
-            }
-
-            public unsafe void SetIconScale(float scale)
-            {
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconScale] Enter");
-                var npObject = AsUnsafe();
-                if (npObject == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                    return;
-                }
-
-                var imageNode = npObject->ImageNode1;
-                if (imageNode == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] ImageNode1 was null");
-                    return;
-                }
-
-                Instance.SetNodeScale(new IntPtr(imageNode), scale, scale);
+                // sizeof(float) == sizeof(int)
+                //var scaleBytes = BitConverter.GetBytes(scale);
+                //var scaleInt = BitConverter.ToInt32(scaleBytes, 0);
+                //Marshal.WriteInt32(scaleXPtr, scaleInt);
+                //Marshal.WriteInt32(scaleYPtr, scaleInt);
                 //imageNode->AtkResNode.ScaleX = scale;
                 //imageNode->AtkResNode.ScaleY = scale;
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconScale] Exit");
             }
 
-            public unsafe void SetIconPosition(short x, short y)
+            public void SetIconPosition(short x, short y)
             {
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconPosition] Enter");
-                var npObject = AsUnsafe();
-                if (npObject == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                    return;
-                }
-
-                var imageNode = npObject->ImageNode1;
-                if (imageNode == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] ImageNode1 was null");
-                    return;
-                }
-
                 //npObject->ImageNode1->AtkResNode.X = 0;
                 //npObject->ImageNode1->AtkResNode.Y = 0;
-                npObject->IconXAdjust = x;
-                npObject->IconYAdjust = y;
-                //Instance.SetNodePosition(new IntPtr(imageNode), x, y);
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.SetIconPosition] Exit");
-            }
-
-            public unsafe AddonNamePlate.NamePlateObject* AsUnsafe()
-            {
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.AsUnsafe] Enter");
-                var npObjectPtr = Pointer;
-                if (npObjectPtr == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateObject was null");
-                    return null;
-                }
-                var result = (AddonNamePlate.NamePlateObject*)npObjectPtr;
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateObject.AsUnsafe] Exit");
-                return result;
+                //npObject->IconXAdjust = x;
+                //npObject->IconYAdjust = y;
+                var iconXAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconXAdjust)).ToInt32();
+                var iconYAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconYAdjust)).ToInt32();
+                Marshal.WriteInt16(iconXAdjustPtr, x);
+                Marshal.WriteInt16(iconYAdjustPtr, y);
+                //Instance.SetNodePosition(IconImageNodeAddress, x, y);
             }
         }
 
         internal class SafeNamePlateInfo
         {
-            public IntPtr Pointer { get; private set; }
+            public readonly IntPtr Pointer;
+            public readonly RaptureAtkModule.NamePlateInfo Data;
 
             public SafeNamePlateInfo(IntPtr pointer)
             {
                 Pointer = pointer;
+                Data = Marshal.PtrToStructure<RaptureAtkModule.NamePlateInfo>(Pointer);
             }
 
-            public unsafe int ActorID
+            #region Getters
+
+            public IntPtr NameAddress => GetStringPtr(nameof(RaptureAtkModule.NamePlateInfo.Name));
+
+            public string Name => GetString(NameAddress);
+
+            public IntPtr FcNameAddress => GetStringPtr(nameof(RaptureAtkModule.NamePlateInfo.FcName));
+
+            public string FcName => GetString(FcNameAddress);
+
+            public IntPtr TitleAddress => GetStringPtr(nameof(RaptureAtkModule.NamePlateInfo.Title));
+
+            public string Title => GetString(TitleAddress);
+
+            public IntPtr DisplayTitleAddress => GetStringPtr(nameof(RaptureAtkModule.NamePlateInfo.DisplayTitle));
+
+            public string DisplayTitle => GetString(DisplayTitleAddress);
+
+            public IntPtr LevelTextAddress => GetStringPtr(nameof(RaptureAtkModule.NamePlateInfo.LevelText));
+
+            public string LevelText => GetString(LevelTextAddress);
+
+            #endregion
+
+            private IntPtr GetStringPtr(string name)
             {
-                get
-                {
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Enter");
-                    var npInfo = AsUnsafe();
-                    if (npInfo == null)
-                    {
-                        PluginLog.Debug($"[{GetType().Name}] NamePlateInfo was null");
-                        return -1;
-                    }
-                    var result = npInfo->ActorID;
-                    PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Exit");
-                    return result;
-                }
+                var namePtr = Pointer + Marshal.OffsetOf(typeof(RaptureAtkModule.NamePlateInfo), name).ToInt32();
+                var stringPtrPtr = namePtr + Marshal.OffsetOf(typeof(Utf8String), nameof(Utf8String.StringPtr)).ToInt32();
+                var stringPtr = Marshal.ReadIntPtr(stringPtrPtr);
+                return stringPtr;
             }
 
-            public unsafe RaptureAtkModule.NamePlateInfo* AsUnsafe()
-            {
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Enter");
-                var npInfoPtr = Pointer;
-                if (npInfoPtr == null)
-                {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateInfo was null");
-                    return null;
-                }
-                var result = (RaptureAtkModule.NamePlateInfo*)npInfoPtr;
-                PluginLog.Information($"[{ThreadID}][SafeNamePlateInfo.ActorID] Exit");
-                return result;
-            }
+            private string GetString(IntPtr stringPtr) => Marshal.PtrToStringAnsi(stringPtr);
         }
     }
 }

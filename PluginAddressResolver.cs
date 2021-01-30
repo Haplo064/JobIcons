@@ -21,7 +21,10 @@ namespace JobIcons
     internal delegate IntPtr UIModule_GetRaptureAtkModuleDelegate(IntPtr uiModule);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    public delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, int ActorId);
+    public delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, int actorId);
+
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
+    public delegate byte GroupManager_IsObjectIDInAllianceDelegate(IntPtr groupManager, int actorId);
 
     internal sealed class PluginAddressResolver : BaseAddressResolver
     {
@@ -43,6 +46,9 @@ namespace JobIcons
         private const string GroupManager_IsObjectIDInPartySignature = "E8 ?? ?? ?? ?? EB B8 E8";
         internal IntPtr GroupManager_IsObjectIDInPartyPtr;
 
+        private const string GroupManager_IsObjectIDInAllianceSignature = "33 C0 44 8B CA F6 81 ?? ?? ?? ?? ??";
+        internal IntPtr GroupManager_IsObjectIDInAlliancePtr;
+
         protected override void Setup64Bit(SigScanner scanner)
         {
             AddonNamePlate_SetNamePlatePtr = scanner.ScanText(AddonNamePlate_SetNamePlateSignature);
@@ -51,6 +57,7 @@ namespace JobIcons
             Framework_GetUIModulePtr = scanner.ScanText(Framework_GetUIModuleSignature);
             GroupManagerPtr = scanner.GetStaticAddressFromSig(GroupManagerSignature);
             GroupManager_IsObjectIDInPartyPtr = scanner.ScanText(GroupManager_IsObjectIDInPartySignature);
+            GroupManager_IsObjectIDInAlliancePtr = scanner.ScanText(GroupManager_IsObjectIDInAllianceSignature);
         }
     }
 }

@@ -26,6 +26,10 @@ namespace JobIcons
         public short YAdjust { get; set; } = 55;
 
         public bool SelfIcon { get; set; } = false;
+        public bool PartyIcons { get; set; } = false;
+        public bool AllianceIcons { get; set; } = false;
+        public bool EveryoneElseIcons { get; set; } = false;
+
         public bool ShowName { get; set; } = false;
         public bool ShowTitle { get; set; } = false;
         public bool ShowFcName { get; set; } = false;
