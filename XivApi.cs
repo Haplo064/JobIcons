@@ -1,5 +1,6 @@
 ﻿using Dalamud.Game.Chat.SeStringHandling;
 using Dalamud.Game.Chat.SeStringHandling.Payloads;
+using Dalamud.Game.ClientState.Actors;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -23,6 +24,7 @@ namespace JobIcons
         private readonly GroupManager_IsObjectIDInAllianceDelegate IsObjectIDInAlliance;
         private readonly AtkResNode_SetScaleDelegate SetNodeScale;
         private readonly AtkResNode_SetPositionShortDelegate SetNodePosition;
+        private readonly BattleCharaStore_LookupBattleCharaByObjectIDDelegate LookupBattleCharaByObjectID;
 
         public static void Initialize(DalamudPluginInterface pluginInterface, PluginAddressResolver address)
         {
@@ -42,6 +44,8 @@ namespace JobIcons
             IsObjectIDInAlliance = Marshal.GetDelegateForFunctionPointer<GroupManager_IsObjectIDInAllianceDelegate>(address.GroupManager_IsObjectIDInAlliancePtr);
             SetNodeScale = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetScaleDelegate>(address.AtkResNode_SetScalePtr);
             SetNodePosition = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetPositionShortDelegate>(address.AtkResNode_SetPositionShortPtr);
+            LookupBattleCharaByObjectID = Marshal.GetDelegateForFunctionPointer<BattleCharaStore_LookupBattleCharaByObjectIDDelegate>(address.BattleCharaStore_LookupBattleCharaByObjectIDPtr);
+
             EmptySeStringPtr = StringToSeStringPtr("");
 
             Interface.ClientState.OnLogout += OnLogout_ResetRaptureAtkModule;
@@ -122,6 +126,24 @@ namespace JobIcons
         internal static bool IsPartyMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
 
         internal static bool IsAllianceMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+
+        internal static bool IsPlayerCharacter(int actorID)
+        {
+            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
+            if (address == IntPtr.Zero)
+                return false;
+
+            return (ObjectKind)Marshal.ReadByte(address + Dalamud.Game.ClientState.Structs.ActorOffsets.ObjectKind) == ObjectKind.Player;
+        }
+
+        internal static uint GetJobId(int actorID)
+        {
+            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
+            if (address == IntPtr.Zero)
+                return 0;
+
+            return Marshal.ReadByte(address + Dalamud.Game.ClientState.Structs.ActorOffsets.ClassJob);
+        }
 
         internal class SafeAddonNamePlate
         {
@@ -234,6 +256,7 @@ namespace JobIcons
 
             public void SetIconScale(float scale, bool force = false)
             {
+                // Leaving this conditional may help with XIVCombo not flickering
                 if (force || IconImageNode.AtkResNode.ScaleX != scale || IconImageNode.AtkResNode.ScaleY != scale)
                     Instance.SetNodeScale(IconImageNodeAddress, scale, scale);
 
@@ -251,15 +274,13 @@ namespace JobIcons
                 //imageNode->AtkResNode.ScaleY = scale;
             }
 
-            public void SetIconPosition(short x, short y, bool force = false)
+            public void SetIconPosition(short x, short y)
             {
-                if (force || Data.IconXAdjust != x || Data.IconYAdjust != y)
-                {
-                    var iconXAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconXAdjust)).ToInt32();
-                    var iconYAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconYAdjust)).ToInt32();
-                    Marshal.WriteInt16(iconXAdjustPtr, x);
-                    Marshal.WriteInt16(iconYAdjustPtr, y);
-                }
+                // This must always be updated, or icons will jump around
+                var iconXAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconXAdjust)).ToInt32();
+                var iconYAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconYAdjust)).ToInt32();
+                Marshal.WriteInt16(iconXAdjustPtr, x);
+                Marshal.WriteInt16(iconYAdjustPtr, y);
 
                 //Instance.SetNodePosition(IconImageNodeAddress, x, y);
                 //npObject->ImageNode1->AtkResNode.X = 0;
@@ -303,6 +324,14 @@ namespace JobIcons
             public string LevelText => GetString(LevelTextAddress);
 
             #endregion
+
+            public bool IsPlayerCharacter() => XivApi.IsPlayerCharacter(Data.ActorID);
+
+            public bool IsPartyMember() => XivApi.IsPartyMember(Data.ActorID);
+
+            public bool IsAllianceMember() => XivApi.IsAllianceMember(Data.ActorID);
+
+            public uint GetJobID() => GetJobId(Data.ActorID);
 
             private IntPtr GetStringPtr(string name)
             {

@@ -314,7 +314,11 @@ namespace JobIcons
                         }
                         else
                         {
-                            var headers = new string[] { "Index", "npObj", "Visible", "IsPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type", "npInfo", "ActorID", "Name", "PrefixTitle", "Title", "FcName", "LevelText" };
+                            var headers = new string[] {
+                                "Index",
+                                "npObj", "Visible", "isLocalPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type",
+                                "npInfo", "ActorID", "Name", "isPC", "isParty", "isAlliance", "JobID", "PrefixTitle", "Title", "FcName", "LevelText"
+                            };
                             var sizes = new float[headers.Length];
 
                             ImGui.Columns(headers.Length);
@@ -368,6 +372,10 @@ namespace JobIcons
                                 DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
                                 DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
                                 DebugTableCell(npInfo.Name, sizes);
+                                DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsAllianceMember(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.GetJobId(npInfo.Data.ActorID).ToString(), sizes);
                                 DebugTableCell(npInfo.Data.IsPrefixTitle.ToString(), sizes);
                                 DebugTableCell(npInfo.Title, sizes);
                                 DebugTableCell(npInfo.FcName, sizes);
@@ -427,15 +435,11 @@ namespace JobIcons
                     if (actorID == -1)
                         continue;
 
-                    var actor = plugin.GetActor(actorID);
-                    if (actor == null)
+                    if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
                         continue;
 
-                    var pc = plugin.AsPlayerCharacter(actor);
-                    if (pc == null)
-                        continue;
-
-                    if (pc.ClassJob.Id == 0)
+                    var jobID = npInfo.GetJobID();
+                    if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
                         continue;
 
                     var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
@@ -449,8 +453,8 @@ namespace JobIcons
 
                     if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
                     {
-                        var iconSet = Configuration.GetIconSet(pc.ClassJob.Id);
-                        // var iconID = iconSet.GetIconID(pc.ClassJob.Id);
+                        var iconSet = Configuration.GetIconSet(jobID);
+                        // var iconID = iconSet.GetIconID(jobID);
                         var scaleMult = iconSet.ScaleMultiplier;
 
                         npObject.SetIconScale(Configuration.Scale * scaleMult);
