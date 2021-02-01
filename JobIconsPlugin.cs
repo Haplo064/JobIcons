@@ -49,7 +49,6 @@ namespace JobIcons
             Interface.CommandManager.AddHandler(Command1, commandInfo);
             Interface.CommandManager.AddHandler(Command2, commandInfo);
 
-
             Task.Run(() => FixNonPlayerCharacterNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
 
             PluginGui = new JobIconsGui(this);
@@ -113,9 +112,8 @@ namespace JobIcons
                 if (actorID == -1)
                     continue;
 
-                var actor = GetPlayerCharacter(actorID);
-                if (actor == null)
-                {  // Not a PlayerCharacter
+                if (!XivApi.IsPlayerCharacter(actorID)) {
+                    // Not a PlayerCharacter
                     npObject.SetIconScale(1);
                 }
             }
@@ -157,24 +155,23 @@ namespace JobIcons
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
 
-            var pc = GetPlayerCharacter(actorID);
+            var jobId = XivApi.GetJobId(actorID);
             // a PC can have a JobID of 0 occasionally, throwing an ArgumentException from the IconSet getter
             // Should probably find a func that can give this data
-            if (pc == null || pc?.ClassJob.Id == 0)
-            {
+            if (jobId == 0) {
                 npObject.SetIconScale(1);
                 // TODO: Cache actorIDs, use last known icon?
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             }
-
+            
             if ((Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
                 (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
                 (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
                 Configuration.EveryoneElseIcons)
             {
-                var iconSet = Configuration.GetIconSet(pc.ClassJob.Id);
+                var iconSet = Configuration.GetIconSet(jobId);
                 var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                iconID = iconSet.GetIconID(pc.ClassJob.Id);
+                iconID = iconSet.GetIconID(jobId);
 
                 if (!Configuration.ShowName)
                     name = EmptySeStringPtr;
@@ -196,16 +193,7 @@ namespace JobIcons
             npObject.SetIconScale(1);
             return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
         }
-
-        internal Dalamud.Game.ClientState.Actors.Types.PlayerCharacter GetPlayerCharacter(int actorID)
-        {
-            foreach (var actor in Interface.ClientState.Actors)
-                if (actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
-                    if (actorID == pc.ActorId)
-                        return pc;
-            return null;
-        }
-
+        
         internal bool IsPartyMember(Dalamud.Game.ClientState.Actors.Types.Actor actor)
         {
             var flag = Marshal.ReadByte(actor.Address + 0x1980);

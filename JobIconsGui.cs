@@ -430,27 +430,13 @@ namespace JobIcons
                     if ((updateLocalPlayer = Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
                         (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
                         (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
-                        (Configuration.EveryoneElseIcons))
-                    {
-                        Dalamud.Game.ClientState.Actors.Types.PlayerCharacter actor;
-                        if (updateLocalPlayer)
-                        {
-                            actor = plugin.Interface.ClientState.LocalPlayer;
-                            if (actor.ClassJob.Id == 0)
-                                continue;
-                        }
-                        else
-                        {
-                            actor = plugin.GetPlayerCharacter(actorID);
-                        }
+                        (Configuration.EveryoneElseIcons)) {
 
-                        if (actor == null)
+                        var jobId = XivApi.GetJobId(actorID);
+                        if (jobId == 0)
                             continue;
 
-                        if (actor.ClassJob.Id == 0)
-                            continue;
-
-                        var iconSet = Configuration.GetIconSet(actor.ClassJob.Id);
+                        var iconSet = Configuration.GetIconSet(jobId);
                         //var iconID = iconSet.GetIconID(actor.ClassJob.Id);
                         var scaleMult = iconSet.ScaleMultiplier;
 

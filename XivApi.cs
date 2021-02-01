@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Dalamud.Game.ClientState.Actors;
 
 namespace JobIcons
 {
@@ -23,6 +24,7 @@ namespace JobIcons
         private readonly GroupManager_IsObjectIDInAllianceDelegate IsObjectIDInAlliance;
         private readonly AtkResNode_SetScaleDelegate SetNodeScale;
         private readonly AtkResNode_SetPositionShortDelegate SetNodePosition;
+        private readonly BattleCharaStore_LookupBattleCharaByObjectIDDelegate LookupBattleCharaByObjectID;
 
         public static void Initialize(DalamudPluginInterface pluginInterface, PluginAddressResolver address)
         {
@@ -40,6 +42,7 @@ namespace JobIcons
             GetUIModule = Marshal.GetDelegateForFunctionPointer<Framework_GetUIModuleDelegate>(address.Framework_GetUIModulePtr);
             IsObjectIDInParty = Marshal.GetDelegateForFunctionPointer<GroupManager_IsObjectIDInPartyDelegate>(address.GroupManager_IsObjectIDInPartyPtr);
             IsObjectIDInAlliance = Marshal.GetDelegateForFunctionPointer<GroupManager_IsObjectIDInAllianceDelegate>(address.GroupManager_IsObjectIDInAlliancePtr);
+            LookupBattleCharaByObjectID = Marshal.GetDelegateForFunctionPointer<BattleCharaStore_LookupBattleCharaByObjectIDDelegate>(address.BattleCharaStore_LookupBattleCharaByObjectIDPtr);
             SetNodeScale = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetScaleDelegate>(address.AtkResNode_SetScalePtr);
             SetNodePosition = Marshal.GetDelegateForFunctionPointer<AtkResNode_SetPositionShortDelegate>(address.AtkResNode_SetPositionShortPtr);
             EmptySeStringPtr = StringToSeStringPtr("");
@@ -122,6 +125,20 @@ namespace JobIcons
         internal static bool IsPartyMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
 
         internal static bool IsAllianceMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+
+        //TODO Maybe not use a static offset for the ObjectKind byte
+        internal static bool IsPlayerCharacter(int actorID) {
+            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
+            if (address == IntPtr.Zero) return false;
+            return (ObjectKind)Marshal.ReadByte(address + 0x8C) == ObjectKind.Player;
+        }
+
+        //TODO Maybe not use a static offset for the Job byte
+        internal static uint GetJobId(int actorID) {
+            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
+            if (address == IntPtr.Zero) return 0;
+            return Marshal.ReadByte(address + 0x1E2);
+        }
 
         internal class SafeAddonNamePlate
         {
