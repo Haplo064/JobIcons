@@ -76,13 +76,13 @@ namespace JobIcons
                     }
                 }
 
+                ImGui.End();
+
                 if (updateRequired)
                 {
                     SaveConfiguration();
                     UpdateNamePlates();
                 }
-
-                ImGui.End();
             }
         }
 
@@ -404,6 +404,7 @@ namespace JobIcons
         }
 
 #endif
+
         private void UpdateNamePlates()
         {
             // So this doesn't work quite... exactly. Something else updates the NamePlate 
@@ -426,32 +427,30 @@ namespace JobIcons
                     if (actorID == -1)
                         continue;
 
-                    bool updateLocalPlayer;
-                    if ((updateLocalPlayer = Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
-                        (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
-                        (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
-                        (Configuration.EveryoneElseIcons))
+                    var actor = plugin.GetActor(actorID);
+                    if (actor == null)
+                        continue;
+
+                    var pc = plugin.AsPlayerCharacter(actor);
+                    if (pc == null)
+                        continue;
+
+                    if (pc.ClassJob.Id == 0)
+                        continue;
+
+                    var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
+                    var isPartyMember = XivApi.IsLocalPlayer(actorID);
+                    var isAllianceMember = XivApi.IsAllianceMember(actorID);
+
+                    var updateLocalPlayer = Configuration.SelfIcon && isLocalPlayer;
+                    var updatePartyMember = Configuration.PartyIcons && isPartyMember;
+                    var updateAllianceMember = Configuration.AllianceIcons && isAllianceMember;
+                    var updateEveryoneElse = Configuration.EveryoneElseIcons && !isLocalPlayer && !isPartyMember && !isAllianceMember;
+
+                    if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
                     {
-                        Dalamud.Game.ClientState.Actors.Types.PlayerCharacter actor;
-                        if (updateLocalPlayer)
-                        {
-                            actor = plugin.Interface.ClientState.LocalPlayer;
-                            if (actor.ClassJob.Id == 0)
-                                continue;
-                        }
-                        else
-                        {
-                            actor = plugin.GetPlayerCharacter(actorID);
-                        }
-
-                        if (actor == null)
-                            continue;
-
-                        if (actor.ClassJob.Id == 0)
-                            continue;
-
-                        var iconSet = Configuration.GetIconSet(actor.ClassJob.Id);
-                        //var iconID = iconSet.GetIconID(actor.ClassJob.Id);
+                        var iconSet = Configuration.GetIconSet(pc.ClassJob.Id);
+                        // var iconID = iconSet.GetIconID(pc.ClassJob.Id);
                         var scaleMult = iconSet.ScaleMultiplier;
 
                         npObject.SetIconScale(Configuration.Scale * scaleMult);
@@ -486,10 +485,6 @@ namespace JobIcons
                         //Marshal.FreeHGlobal(titlePtr);
                         //Marshal.FreeHGlobal(namePtr);
                         //Marshal.FreeHGlobal(fcNamePtr);
-                    }
-                    else
-                    {
-                        npObject.SetIconScale(1);
                     }
                 }
             }

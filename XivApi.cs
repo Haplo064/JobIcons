@@ -232,10 +232,11 @@ namespace JobIcons
 
             public unsafe bool IsLocalPlayer => Data.IsLocalPlayer;
 
-            public void SetIconScale(float scale)
+            public void SetIconScale(float scale, bool force = false)
             {
-                Instance.SetNodeScale(IconImageNodeAddress, scale, scale);
-                
+                if (force || IconImageNode.AtkResNode.ScaleX != scale || IconImageNode.AtkResNode.ScaleY != scale)
+                    Instance.SetNodeScale(IconImageNodeAddress, scale, scale);
+
                 //var imageNodePtr = IconImageNodeAddress;
                 //var resNodePtr = imageNodePtr + Marshal.OffsetOf(typeof(AtkImageNode), nameof(AtkImageNode.AtkResNode)).ToInt32();
                 //var scaleXPtr = resNodePtr + Marshal.OffsetOf(typeof(AtkResNode), nameof(AtkResNode.ScaleX)).ToInt32();
@@ -250,17 +251,21 @@ namespace JobIcons
                 //imageNode->AtkResNode.ScaleY = scale;
             }
 
-            public void SetIconPosition(short x, short y)
+            public void SetIconPosition(short x, short y, bool force = false)
             {
+                if (force || Data.IconXAdjust != x || Data.IconYAdjust != y)
+                {
+                    var iconXAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconXAdjust)).ToInt32();
+                    var iconYAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconYAdjust)).ToInt32();
+                    Marshal.WriteInt16(iconXAdjustPtr, x);
+                    Marshal.WriteInt16(iconYAdjustPtr, y);
+                }
+
+                //Instance.SetNodePosition(IconImageNodeAddress, x, y);
                 //npObject->ImageNode1->AtkResNode.X = 0;
                 //npObject->ImageNode1->AtkResNode.Y = 0;
                 //npObject->IconXAdjust = x;
                 //npObject->IconYAdjust = y;
-                var iconXAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconXAdjust)).ToInt32();
-                var iconYAdjustPtr = Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconYAdjust)).ToInt32();
-                Marshal.WriteInt16(iconXAdjustPtr, x);
-                Marshal.WriteInt16(iconYAdjustPtr, y);
-                //Instance.SetNodePosition(IconImageNodeAddress, x, y);
             }
         }
 

@@ -2,6 +2,7 @@
 using Dalamud.Hooking;
 using Dalamud.Plugin;
 using System;
+using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +24,8 @@ namespace JobIcons
         private Hook<SetNamePlateDelegate> SetNamePlateHook;
 
         private IntPtr EmptySeStringPtr;
+
+        private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
 
         public unsafe void Initialize(DalamudPluginInterface pluginInterface)
         {
@@ -49,7 +52,6 @@ namespace JobIcons
             Interface.CommandManager.AddHandler(Command1, commandInfo);
             Interface.CommandManager.AddHandler(Command2, commandInfo);
 
-
             Task.Run(() => FixNonPlayerCharacterNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
 
             PluginGui = new JobIconsGui(this);
@@ -73,7 +75,6 @@ namespace JobIcons
         }
 
         private void CommandHandler(string command, string arguments) => PluginGui.ToggleConfigWindow();
-
 
         #region fix non-pc nameplates
 
@@ -113,9 +114,22 @@ namespace JobIcons
                 if (actorID == -1)
                     continue;
 
-                var actor = GetPlayerCharacter(actorID);
+                var actor = GetActor(actorID);
                 if (actor == null)
-                {  // Not a PlayerCharacter
+                    continue;
+
+                var pc = AsPlayerCharacter(actor);
+                var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
+                var isPartyMember = XivApi.IsLocalPlayer(actorID);
+                var isAllianceMember = XivApi.IsAllianceMember(actorID);
+
+                var updateLocalPlayer = Configuration.SelfIcon && isLocalPlayer;
+                var updatePartyMember = Configuration.PartyIcons && isPartyMember;
+                var updateAllianceMember = Configuration.AllianceIcons && isAllianceMember;
+                var updateEveryoneElse = Configuration.EveryoneElseIcons && !isLocalPlayer && !isPartyMember && !isAllianceMember;
+
+                if (pc == null || !(updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse))
+                {
                     npObject.SetIconScale(1);
                 }
             }
@@ -139,8 +153,6 @@ namespace JobIcons
 
         internal IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
-            IntPtr result;
-
             if (!Configuration.Enabled)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
@@ -156,25 +168,72 @@ namespace JobIcons
             if (actorID == -1)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
-
-            var pc = GetPlayerCharacter(actorID);
-            // a PC can have a JobID of 0 occasionally, throwing an ArgumentException from the IconSet getter
-            // Should probably find a func that can give this data
-            if (pc == null || pc?.ClassJob.Id == 0)
+            uint jobID;
+            var actor = GetActor(actorID);
+            if (actor == null)
             {
-                npObject.SetIconScale(1);
-                // TODO: Cache actorIDs, use last known icon?
-                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                // If you don't cast to object, it tries to get by index
+                var cache = LastKnownJobID[(object)actorID];
+                if (cache == null)
+                {
+                    // There must be an actor. Dalamud is out of date, wait for the next iteration
+                    return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                }
+                else
+                {
+                    jobID = (uint)cache;
+                }
+            }
+            else
+            {
+                var pc = AsPlayerCharacter(actor);
+                if (pc == null)  // Only PlayerCharacters can have icons
+                {
+                    npObject.SetIconScale(1);
+                    return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                }
+
+                if (pc.ClassJob.Id == 0)
+                {
+                    // If you don't cast to object, it tries to get by index
+                    var cache = LastKnownJobID[(object)actorID];
+                    if (cache == null)
+                    {
+                        // PC is not ready yet, wait for the next iteration
+                        return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+                    }
+                    else
+                    {
+                        jobID = (uint)cache;
+                    }
+                }
+                else
+                {
+                    jobID = pc.ClassJob.Id;
+                }
             }
 
-            if ((Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
-                (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
-                (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
-                Configuration.EveryoneElseIcons)
+            // Cache this actor's job
+            LastKnownJobID[(object)actorID] = jobID;
+
+            // Prune the pool a little.
+            while (LastKnownJobID.Count > 500)
+                LastKnownJobID.RemoveAt(0);
+
+            var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
+            var isPartyMember = XivApi.IsLocalPlayer(actorID);
+            var isAllianceMember = XivApi.IsAllianceMember(actorID);
+
+            var updateLocalPlayer = Configuration.SelfIcon && isLocalPlayer;
+            var updatePartyMember = Configuration.PartyIcons && isPartyMember;
+            var updateAllianceMember = Configuration.AllianceIcons && isAllianceMember;
+            var updateEveryoneElse = Configuration.EveryoneElseIcons && !isLocalPlayer && !isPartyMember && !isAllianceMember;
+
+            if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
             {
-                var iconSet = Configuration.GetIconSet(pc.ClassJob.Id);
+                var iconSet = Configuration.GetIconSet(jobID);
                 var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                iconID = iconSet.GetIconID(pc.ClassJob.Id);
+                iconID = iconSet.GetIconID(jobID);
 
                 if (!Configuration.ShowName)
                     name = EmptySeStringPtr;
@@ -185,32 +244,31 @@ namespace JobIcons
                 if (!Configuration.ShowFcName)
                     fcName = EmptySeStringPtr;
 
-                npObject.SetIconScale(scale);
-                result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                npObject.SetIconScale(scale);
+                var result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
+                npObject.SetIconScale(scale);
                 npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+
                 return result;
             }
-
-            npObject.SetIconScale(1);
-            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            else
+            {
+                npObject.SetIconScale(1);
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            }
         }
 
-        internal Dalamud.Game.ClientState.Actors.Types.PlayerCharacter GetPlayerCharacter(int actorID)
+        internal Dalamud.Game.ClientState.Actors.Types.Actor GetActor(int actorID)
         {
             foreach (var actor in Interface.ClientState.Actors)
-                if (actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter pc)
-                    if (actorID == pc.ActorId)
-                        return pc;
+                if (actorID == actor.ActorId)
+                    return actor;
             return null;
         }
 
-        internal bool IsPartyMember(Dalamud.Game.ClientState.Actors.Types.Actor actor)
+        internal Dalamud.Game.ClientState.Actors.Types.PlayerCharacter AsPlayerCharacter(Dalamud.Game.ClientState.Actors.Types.Actor actor)
         {
-            var flag = Marshal.ReadByte(actor.Address + 0x1980);
-            return (flag & 16) > 0;
+            return actor as Dalamud.Game.ClientState.Actors.Types.PlayerCharacter;
         }
-
     }
 }
