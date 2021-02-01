@@ -171,6 +171,7 @@ namespace JobIcons
             var jobID = npInfo.GetJobID();
             if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
             {
+                // This may not necessarily be needed anymore, but better safe than sorry.
                 var cache = LastKnownJobID[(object)actorID];
                 if (cache == null)
                     return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
