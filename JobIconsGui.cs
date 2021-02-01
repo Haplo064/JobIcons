@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.Plugin;
 
 namespace JobIcons
 {
@@ -426,8 +427,7 @@ namespace JobIcons
                     if (actorID == -1)
                         continue;
 
-                    bool updateLocalPlayer;
-                    if ((updateLocalPlayer = Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
+                    if ((Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
                         (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
                         (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
                         (Configuration.EveryoneElseIcons)) {
