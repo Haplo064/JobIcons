@@ -57,7 +57,7 @@ namespace JobIcons
 
         private const string BattleCharaStore_LookupBattleCharaByObjectIDSignature = "E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 3A 48 8B C8";
         internal IntPtr BattleCharaStore_LookupBattleCharaByObjectIDPtr;
-        
+
         protected override void Setup64Bit(SigScanner scanner)
         {
             AddonNamePlate_SetNamePlatePtr = scanner.ScanText(AddonNamePlate_SetNamePlateSignature);
