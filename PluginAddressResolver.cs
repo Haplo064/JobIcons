@@ -21,10 +21,13 @@ namespace JobIcons
     internal delegate IntPtr UIModule_GetRaptureAtkModuleDelegate(IntPtr uiModule);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    public delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, int actorId);
+    internal delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, int actorId);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    public delegate byte GroupManager_IsObjectIDInAllianceDelegate(IntPtr groupManager, int actorId);
+    internal delegate byte GroupManager_IsObjectIDInAllianceDelegate(IntPtr groupManager, int actorId);
+
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
+    internal delegate IntPtr BattleCharaStore_LookupBattleCharaByObjectIDDelegate(IntPtr battleCharaStore, int actorId);
 
     internal sealed class PluginAddressResolver : BaseAddressResolver
     {
@@ -49,6 +52,12 @@ namespace JobIcons
         private const string GroupManager_IsObjectIDInAllianceSignature = "33 C0 44 8B CA F6 81 ?? ?? ?? ?? ??";
         internal IntPtr GroupManager_IsObjectIDInAlliancePtr;
 
+        private const string BattleCharaStoreSignature = "8B D0 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 3A";
+        internal IntPtr BattleCharaStorePtr;
+
+        private const string BattleCharaStore_LookupBattleCharaByObjectIDSignature = "E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 3A 48 8B C8";
+        internal IntPtr BattleCharaStore_LookupBattleCharaByObjectIDPtr;
+        
         protected override void Setup64Bit(SigScanner scanner)
         {
             AddonNamePlate_SetNamePlatePtr = scanner.ScanText(AddonNamePlate_SetNamePlateSignature);
@@ -58,6 +67,8 @@ namespace JobIcons
             GroupManagerPtr = scanner.GetStaticAddressFromSig(GroupManagerSignature);
             GroupManager_IsObjectIDInPartyPtr = scanner.ScanText(GroupManager_IsObjectIDInPartySignature);
             GroupManager_IsObjectIDInAlliancePtr = scanner.ScanText(GroupManager_IsObjectIDInAllianceSignature);
+            BattleCharaStorePtr = scanner.GetStaticAddressFromSig(BattleCharaStoreSignature);
+            BattleCharaStore_LookupBattleCharaByObjectIDPtr = scanner.ScanText(BattleCharaStore_LookupBattleCharaByObjectIDSignature);
         }
     }
 }

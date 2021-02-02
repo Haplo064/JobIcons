@@ -76,13 +76,13 @@ namespace JobIcons
                     }
                 }
 
+                ImGui.End();
+
                 if (updateRequired)
                 {
                     SaveConfiguration();
                     UpdateNamePlates();
                 }
-
-                ImGui.End();
             }
         }
 
@@ -314,7 +314,11 @@ namespace JobIcons
                         }
                         else
                         {
-                            var headers = new string[] { "Index", "npObj", "Visible", "IsPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type", "npInfo", "ActorID", "Name", "PrefixTitle", "Title", "FcName", "LevelText" };
+                            var headers = new string[] {
+                                "Index",
+                                "npObj", "Visible", "isLocalPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type",
+                                "npInfo", "ActorID", "Name", "isPC", "isParty", "isAlliance", "JobID", "PrefixTitle", "Title", "FcName", "LevelText"
+                            };
                             var sizes = new float[headers.Length];
 
                             ImGui.Columns(headers.Length);
@@ -368,6 +372,10 @@ namespace JobIcons
                                 DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
                                 DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
                                 DebugTableCell(npInfo.Name, sizes);
+                                DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsAllianceMember(npInfo.Data.ActorID).ToString(), sizes);
+                                DebugTableCell(XivApi.GetJobId(npInfo.Data.ActorID).ToString(), sizes);
                                 DebugTableCell(npInfo.Data.IsPrefixTitle.ToString(), sizes);
                                 DebugTableCell(npInfo.Title, sizes);
                                 DebugTableCell(npInfo.FcName, sizes);
@@ -404,6 +412,7 @@ namespace JobIcons
         }
 
 #endif
+
         private void UpdateNamePlates()
         {
             // So this doesn't work quite... exactly. Something else updates the NamePlate 
@@ -426,32 +435,26 @@ namespace JobIcons
                     if (actorID == -1)
                         continue;
 
-                    bool updateLocalPlayer;
-                    if ((updateLocalPlayer = Configuration.SelfIcon && XivApi.IsLocalPlayer(actorID)) ||
-                        (Configuration.PartyIcons && XivApi.IsPartyMember(actorID)) ||
-                        (Configuration.AllianceIcons && XivApi.IsAllianceMember(actorID)) ||
-                        (Configuration.EveryoneElseIcons))
+                    if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
+                        continue;
+
+                    var jobID = npInfo.GetJobID();
+                    if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
+                        continue;
+
+                    var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
+                    var isPartyMember = XivApi.IsLocalPlayer(actorID);
+                    var isAllianceMember = XivApi.IsAllianceMember(actorID);
+
+                    var updateLocalPlayer = Configuration.SelfIcon && isLocalPlayer;
+                    var updatePartyMember = Configuration.PartyIcons && isPartyMember;
+                    var updateAllianceMember = Configuration.AllianceIcons && isAllianceMember;
+                    var updateEveryoneElse = Configuration.EveryoneElseIcons && !isLocalPlayer && !isPartyMember && !isAllianceMember;
+
+                    if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
                     {
-                        Dalamud.Game.ClientState.Actors.Types.PlayerCharacter actor;
-                        if (updateLocalPlayer)
-                        {
-                            actor = plugin.Interface.ClientState.LocalPlayer;
-                            if (actor.ClassJob.Id == 0)
-                                continue;
-                        }
-                        else
-                        {
-                            actor = plugin.GetPlayerCharacter(actorID);
-                        }
-
-                        if (actor == null)
-                            continue;
-
-                        if (actor.ClassJob.Id == 0)
-                            continue;
-
-                        var iconSet = Configuration.GetIconSet(actor.ClassJob.Id);
-                        //var iconID = iconSet.GetIconID(actor.ClassJob.Id);
+                        var iconSet = Configuration.GetIconSet(jobID);
+                        // var iconID = iconSet.GetIconID(jobID);
                         var scaleMult = iconSet.ScaleMultiplier;
 
                         npObject.SetIconScale(Configuration.Scale * scaleMult);
@@ -486,10 +489,6 @@ namespace JobIcons
                         //Marshal.FreeHGlobal(titlePtr);
                         //Marshal.FreeHGlobal(namePtr);
                         //Marshal.FreeHGlobal(fcNamePtr);
-                    }
-                    else
-                    {
-                        npObject.SetIconScale(1);
                     }
                 }
             }

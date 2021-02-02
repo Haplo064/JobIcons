@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 
 namespace JobIcons
 {
     internal enum Job : uint
     {
+        ADV = 0,
         GLA = 1,
         PGL = 2,
         MRD = 3,
@@ -46,6 +47,7 @@ namespace JobIcons
 
     internal static class JobExtensions
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "No, it looks dumb")]
         public static JobRole GetRole(this Job job)
         {
             switch (job)

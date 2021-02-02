@@ -69,7 +69,7 @@ namespace JobIcons
                 94534, 94535, 94536, 94537, 94538, 94539, 94540, 94541, 94579, 94580,
                 94581, 94582, 94583, 94584, 94585, 94530, 94586, 94587, 94621, 94622,
                 94625, 94623, 94624, 94627, 94628, 94629, 94630, 94631 }, 2);
-            Add("Role", new int[] {
+            Add("Role", new int[] { 
                 62581, 62584, 62581, 62584, 62586, 62582, 62502, 62502, 62503, 62504,
                 62505, 62506, 62507, 62508, 62509, 62510, 62511, 62512, 62581, 62584,
                 62581, 62584, 62586, 62582, 62587, 62587, 62587, 62582, 62584, 62584,
@@ -106,7 +106,7 @@ namespace JobIcons
 
         private IconSet(string name, int[] icons, float scaleMultiplier)
         {
-            var numJobs = Enum.GetNames(typeof(Job)).Length;
+            var numJobs = Enum.GetNames(typeof(Job)).Length - 1;
             if (icons.Length != numJobs)
                 throw new ArgumentException($"IconSet was provided {icons.Length} icons, expected {numJobs}");
 
@@ -124,6 +124,7 @@ namespace JobIcons
 
         public int GetIconID(uint jobID)
         {
+            // SUBTRACT FROM JOBID HERE
             var job = (Job)jobID - 1;
             if (IconMethod != null)
             {
