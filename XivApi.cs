@@ -1,5 +1,5 @@
-﻿using Dalamud.Game.Chat.SeStringHandling;
-using Dalamud.Game.Chat.SeStringHandling.Payloads;
+﻿using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Game.ClientState.Actors;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.String;
@@ -244,7 +244,7 @@ namespace JobIcons
 
             #region Getters
 
-            public IntPtr IconImageNodeAddress => Marshal.ReadIntPtr(Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconImageNode)).ToInt32());
+            public unsafe IntPtr IconImageNodeAddress => Marshal.ReadIntPtr(Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconImageNode)).ToInt32());
 
             public AtkImageNode IconImageNode => Marshal.PtrToStructure<AtkImageNode>(IconImageNodeAddress);
 
@@ -333,7 +333,7 @@ namespace JobIcons
 
             public uint GetJobID() => GetJobId(Data.ActorID);
 
-            private IntPtr GetStringPtr(string name)
+            private unsafe IntPtr GetStringPtr(string name)
             {
                 var namePtr = Pointer + Marshal.OffsetOf(typeof(RaptureAtkModule.NamePlateInfo), name).ToInt32();
                 var stringPtrPtr = namePtr + Marshal.OffsetOf(typeof(Utf8String), nameof(Utf8String.StringPtr)).ToInt32();
