@@ -2,11 +2,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>JobIcons</PackageId>
-    <Version>3.1.0.0</Version>
+    <Version>3.2.0.0</Version>
     <Authors>haplo, daemitus</Authors>
     <Company>-</Company>
     <Description></Description>
     <PackageProjectUrl>https://github.com/haplo064/JobIcons</PackageProjectUrl>
+    <PackageVersion>3.2.0.0</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup>
