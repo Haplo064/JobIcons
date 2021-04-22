@@ -26,6 +26,8 @@ namespace JobIcons
         private IntPtr EmptySeStringPtr;
 
         private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
+        private readonly IntPtr[] JobStr = new IntPtr[Enum.GetValues(typeof(Job)).Length];
+        //private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
 
         public unsafe void Initialize(DalamudPluginInterface pluginInterface)
         {
@@ -33,6 +35,11 @@ namespace JobIcons
 
             Configuration = pluginInterface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
 
+
+
+            //var testStr = XivApi.StringToSeStringPtr("TEst");
+            //PluginLog.LogInformation(XivApi.GetSeStringFromPtr(testStr).ToString());
+            //InitJobStr();
             Address = new PluginAddressResolver();
             Address.Setup(pluginInterface.TargetModuleScanner);
 
@@ -43,6 +50,13 @@ namespace JobIcons
             SetNamePlateHook.Enable();
 
             EmptySeStringPtr = XivApi.StringToSeStringPtr("");
+            InitJobStr();
+
+            for (var index = 0; index < Enum.GetValues(typeof(Job)).Length; index++)
+            {
+                var jobName = ((Job)index).GetName();
+                JobStr[index] = XivApi.StringToSeStringPtr($"[{jobName}]");
+            }
 
             var commandInfo = new CommandInfo(CommandHandler)
             {
@@ -55,6 +69,25 @@ namespace JobIcons
             Task.Run(() => FixNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
 
             PluginGui = new JobIconsGui(this);
+        }
+
+        private void InitJobStr()
+        {
+            for (var index = 0; index < Enum.GetValues(typeof(Job)).Length; index++)
+            {
+                var jobName = ((Job)index).GetName();
+                JobStr[index] = XivApi.StringToSeStringPtr($"[{jobName}]");
+                //PluginLog.LogInformation(JobStr[index].ToString("X"));
+                //PluginLog.LogInformation(XivApi.GetSeStringFromPtr(JobStr[index]).ToString());
+            }
+        }
+
+        private void DisposeJobStr()
+        {
+            foreach (var seStrPtr in JobStr)
+            {
+                Marshal.FreeHGlobal(seStrPtr);
+            }
         }
 
         internal void SaveConfiguration() => Interface.SavePluginConfig(Configuration);
@@ -72,6 +105,7 @@ namespace JobIcons
             XivApi.DisposeInstance();
             FixNonPlayerCharacterNamePlatesTokenSource.Cancel();
             Marshal.FreeHGlobal(EmptySeStringPtr);
+            DisposeJobStr();
         }
 
         private void CommandHandler(string command, string arguments) => PluginGui.ToggleConfigWindow();
@@ -197,12 +231,24 @@ namespace JobIcons
 
             if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
             {
-                var iconSet = Configuration.GetIconSet(jobID);
-                var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                iconID = iconSet.GetIconID(jobID);
+                if (Configuration.ShowIcon)
+                {
+                    var iconSet = Configuration.GetIconSet(jobID);
+                    var scale = Configuration.Scale * iconSet.ScaleMultiplier;
+                    iconID = iconSet.GetIconID(jobID);
+                    npObject.SetIconScale(scale);
+                }
+
 
                 if (!Configuration.ShowName)
                     name = EmptySeStringPtr;
+                else
+                {
+                    if (Configuration.JobName)
+                    {
+                        name = JobStr[jobID];
+                    }
+                }
 
                 if (!Configuration.ShowTitle)
                     title = EmptySeStringPtr;
@@ -210,9 +256,11 @@ namespace JobIcons
                 if (!Configuration.ShowFcName)
                     fcName = EmptySeStringPtr;
 
-                npObject.SetIconScale(scale);
                 var result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+                if (Configuration.LocationAdjust)
+                {
+                    npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+                }
 
                 return result;
             }

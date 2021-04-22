@@ -137,18 +137,31 @@ namespace JobIcons
                     updateRequired = true;
                 }
 
-                int xAdjust = Configuration.XAdjust;
-                if (ImGui.InputInt("X Adjust", ref xAdjust))
-                {
-                    Configuration.XAdjust = (short)xAdjust;
-                    updateRequired = true;
+                var locationAdjust = Configuration.LocationAdjust;
+                if (ImGui.Checkbox("Adjust JobIcon Location", ref locationAdjust)) {
+                    Configuration.LocationAdjust = locationAdjust;
+                    updateRequired               = true;
                 }
 
-                int yAdjust = Configuration.YAdjust;
-                if (ImGui.InputInt("Y Adjust", ref yAdjust))
-                {
-                    Configuration.YAdjust = (short)yAdjust;
-                    updateRequired = true;
+                if (locationAdjust) {
+
+                    int xAdjust = Configuration.XAdjust;
+                    if (ImGui.InputInt("X Adjust", ref xAdjust)) {
+                        Configuration.XAdjust = (short)xAdjust;
+                        updateRequired        = true;
+                    }
+
+                    int yAdjust = Configuration.YAdjust;
+                    if (ImGui.InputInt("Y Adjust", ref yAdjust)) {
+                        Configuration.YAdjust = (short)yAdjust;
+                        updateRequired        = true;
+                    }
+                }
+
+                var showIcon = Configuration.ShowIcon;
+                if (ImGui.Checkbox("Show JobIcon", ref showIcon)) {
+                    Configuration.ShowIcon = showIcon;
+                    updateRequired         = true;
                 }
 
                 var showName = Configuration.ShowName;
@@ -158,6 +171,14 @@ namespace JobIcons
                         Configuration.ShowTitle = false;
                     Configuration.ShowName = showName;
                     updateRequired = true;
+                }
+
+                var jobName = Configuration.JobName;
+                if (ImGui.Checkbox("Replace Name by Job (Requires Name)", ref jobName)) {
+                    if (!jobName)
+                        Configuration.ShowName = true;
+                    Configuration.JobName = jobName;
+                    updateRequired        = true;
                 }
 
                 var showTitle = Configuration.ShowTitle;
@@ -241,6 +262,7 @@ namespace JobIcons
         {
             if (ImGui.BeginTabItem("About"))
             {
+                //ImGui.TextWrapped(XivApi.RaptureAtkModulePtr.ToInt64().ToString("X"));
                 ImGui.TextWrapped("");
                 ImGui.TextWrapped("- The scale is 1.0 for 'default', 2.0 for double etc.");
                 ImGui.TextWrapped("- Use X and Y Adjust to make the icon appear where you want, relative to the player.");
@@ -317,7 +339,8 @@ namespace JobIcons
                             var headers = new string[] {
                                 "Index",
                                 "npObj", "Visible", "isLocalPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type",
-                                "npInfo", "ActorID", "Name", "isPC", "isParty", "isAlliance", "JobID", "PrefixTitle", "Title", "FcName", "LevelText"
+                                "npInfo"
+                              , "ActorID", "Name", "isPC", "isParty", "isAlliance", "JobID", "PrefixTitle", "Title", "FcName", "LevelText"
                             };
                             var sizes = new float[headers.Length];
 
@@ -341,8 +364,7 @@ namespace JobIcons
                                 }
 
                                 var npInfo = npObject.NamePlateInfo;
-                                if (npInfo == null)
-                                {
+                                if (npInfo == null) {
                                     for (int c = 0; c < headers.Length; c++)
                                         DebugTableCell("npInfo=null", sizes);
                                     continue;
@@ -367,10 +389,11 @@ namespace JobIcons
                                 DebugTableCell(imageY, sizes);
                                 DebugTableCell(scaleX, sizes);
                                 DebugTableCell(scaleY, sizes);
-                                DebugTableCell(npObject.Data.NameplateKind.ToString(), sizes);
+                                DebugTableCell(npObject.Data.UnkType.ToString(), sizes);
 
                                 DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
-                                DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
+                                //DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
+                                DebugTableCell($"0x{npInfo.Data.ActorID:X}", sizes);
                                 DebugTableCell(npInfo.Name, sizes);
                                 DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ActorID).ToString(), sizes);
                                 DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ActorID).ToString(), sizes);

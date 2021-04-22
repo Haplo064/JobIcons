@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace JobIcons
 {
@@ -49,6 +50,8 @@ namespace JobIcons
             EmptySeStringPtr = StringToSeStringPtr("");
 
             Interface.ClientState.OnLogout += OnLogout_ResetRaptureAtkModule;
+
+
         }
 
         public static void DisposeInstance() => Instance.Dispose();
@@ -244,7 +247,7 @@ namespace JobIcons
 
             #region Getters
 
-            public IntPtr IconImageNodeAddress => Marshal.ReadIntPtr(Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconImageNode)).ToInt32());
+            public unsafe IntPtr IconImageNodeAddress => Marshal.ReadIntPtr(Pointer + Marshal.OffsetOf(typeof(AddonNamePlate.NamePlateObject), nameof(AddonNamePlate.NamePlateObject.IconImageNode)).ToInt32());
 
             public AtkImageNode IconImageNode => Marshal.PtrToStructure<AtkImageNode>(IconImageNodeAddress);
 
@@ -333,15 +336,23 @@ namespace JobIcons
 
             public uint GetJobID() => GetJobId(Data.ActorID);
 
-            private IntPtr GetStringPtr(string name)
+            private unsafe IntPtr GetStringPtr(string name)
             {
                 var namePtr = Pointer + Marshal.OffsetOf(typeof(RaptureAtkModule.NamePlateInfo), name).ToInt32();
                 var stringPtrPtr = namePtr + Marshal.OffsetOf(typeof(Utf8String), nameof(Utf8String.StringPtr)).ToInt32();
                 var stringPtr = Marshal.ReadIntPtr(stringPtrPtr);
                 return stringPtr;
             }
+            internal static string StringFromNativeUtf8(IntPtr nativeUtf8) {
+                int len = 0;
+                while (Marshal.ReadByte(nativeUtf8, len) != 0) ++len;
+                byte[] buffer = new byte[len];
+                Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
+                return Encoding.UTF8.GetString(buffer);
+            }
 
-            private string GetString(IntPtr stringPtr) => Marshal.PtrToStringAnsi(stringPtr);
+            //private string GetString(IntPtr stringPtr) => Marshal.PtrToStringAnsi(stringPtr);
+            private string GetString(IntPtr stringPtr) => StringFromNativeUtf8(stringPtr);
         }
     }
 }

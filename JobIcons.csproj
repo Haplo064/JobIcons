@@ -2,12 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>JobIcons</PackageId>
-    <Version>3.2.0.0</Version>
+    <Version>3.1.0.1</Version>
     <Authors>haplo, daemitus</Authors>
     <Company>-</Company>
     <Description></Description>
     <PackageProjectUrl>https://github.com/haplo064/JobIcons</PackageProjectUrl>
-    <PackageVersion>3.2.0.0</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -46,7 +45,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\</DalamudLibPath>
+    <DalamudLibPath>D:\OG\FF14\Dalamud\</DalamudLibPath>
+    <AssemblyVersion>3.1.0.2</AssemblyVersion>
+    <FileVersion>3.1.0.2</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -59,30 +60,35 @@
     <PackageReference Include="DalamudPackager" Version="1.2.0" />
     <PackageReference Include="ILRepack" Version="2.0.18" GeneratePathProperty="true" />
     <PackageReference Include="System.Collections.Specialized" Version="4.3.0" />
-    <ProjectReference Include="$(SolutionDir)lib\FFXIVClientStructs\FFXIVClientStructs.csproj" />
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <ProjectReference Include="$(SolutionDir)lib\FFXIVClientStructs\FFXIVClientStructs.csproj">
+      <Private>true</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Dalamud">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\OG\FF14\Dalamud\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="ImGuiScene">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\OG\FF14\Dalamud\ImGuiScene.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Lumina">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Lumina.Excel">
-      <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>D:\OG\FF14\Dalamud\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
     </Reference>
   </ItemGroup>
 
@@ -108,4 +114,58 @@
     <Message Text="Starting DalamudPackager" Importance="high" />
     <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(OutputPath)" AssemblyName="$(AssemblyName)" VersionComponents="4" MakeZip="true" />
   </Target>
+
+  <ItemGroup>
+    <Reference Update="System">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Core">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Data">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Drawing">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.IO.Compression.FileSystem">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Numerics">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Runtime.Serialization">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Xml">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Xml.Linq">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
 </Project>
