@@ -46,7 +46,7 @@ namespace JobIcons
             XivApi.Initialize(Interface, Address);
             IconSet.Initialize(this);
 
-            SetNamePlateHook = new Hook<SetNamePlateDelegate>(Address.AddonNamePlate_SetNamePlatePtr, new SetNamePlateDelegate(SetNamePlateDetour), this);
+            SetNamePlateHook = new Hook<SetNamePlateDelegate>(Address.AddonNamePlate_SetNamePlatePtr, SetNamePlateDetour);
             SetNamePlateHook.Enable();
 
             EmptySeStringPtr = XivApi.StringToSeStringPtr("");

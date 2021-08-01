@@ -389,7 +389,7 @@ namespace JobIcons
                                 DebugTableCell(imageY, sizes);
                                 DebugTableCell(scaleX, sizes);
                                 DebugTableCell(scaleY, sizes);
-                                DebugTableCell(npObject.Data.UnkType.ToString(), sizes);
+                                DebugTableCell(npObject.Data.NameplateKind.ToString(), sizes);
 
                                 DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
                                 //DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
