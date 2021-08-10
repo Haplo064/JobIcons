@@ -292,16 +292,29 @@ namespace JobIcons
                 //npObject->IconYAdjust = y;
             }
         }
+        [StructLayout(LayoutKind.Explicit, Size = 0x248)]
+        public unsafe struct NamePlateInfo
+        {
+            [FieldOffset(0x00)] public int ActorID;
+            [FieldOffset(0x52)] public Utf8String Name;
+            [FieldOffset(0xBD)] public Utf8String FcName;
+            [FieldOffset(0x122)] public Utf8String Title;
+            [FieldOffset(0x18A)] public Utf8String DisplayTitle;
+            [FieldOffset(0x1F2)] public Utf8String LevelText;
+            //[FieldOffset(0x240)] public int Flags;
+
+            //public bool IsPrefixTitle => ((Flags >> (8 * 3)) & 0xFF) == 1;
+        }
 
         internal class SafeNamePlateInfo
         {
             public readonly IntPtr Pointer;
-            public readonly RaptureAtkModule.NamePlateInfo Data;
+            public readonly NamePlateInfo Data;
 
             public SafeNamePlateInfo(IntPtr pointer)
             {
-                Pointer = pointer;
-                Data = Marshal.PtrToStructure<RaptureAtkModule.NamePlateInfo>(Pointer);
+                Pointer = pointer-0x10;
+                Data = Marshal.PtrToStructure<NamePlateInfo>(Pointer);
             }
 
             #region Getters

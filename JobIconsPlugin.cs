@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState;
 
 namespace JobIcons
 {
@@ -175,15 +176,16 @@ namespace JobIcons
             {
                 PluginLog.Error(ex, $"SetNamePlateDetour encountered a critical error");
             }
-
+            
             return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
         }
 
         internal IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
+            
             if (!Configuration.Enabled)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-
+            
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
             if (npObject == null)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
@@ -191,7 +193,7 @@ namespace JobIcons
             var npInfo = npObject.NamePlateInfo;
             if (npInfo == null)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-
+            
             var actorID = npInfo.Data.ActorID;
             if (actorID == -1)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
@@ -201,7 +203,6 @@ namespace JobIcons
                 npObject.SetIconScale(1);
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             }
-
             var jobID = npInfo.GetJobID();
             if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
             {
@@ -219,7 +220,7 @@ namespace JobIcons
             // Prune the pool a little.
             while (LastKnownJobID.Count > 500)
                 LastKnownJobID.RemoveAt(0);
-
+            
             var isLocalPlayer = npObject.IsLocalPlayer;
             var isPartyMember = npInfo.IsPartyMember();
             var isAllianceMember = npInfo.IsAllianceMember();
@@ -235,7 +236,8 @@ namespace JobIcons
                 {
                     var iconSet = Configuration.GetIconSet(jobID);
                     var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                    if (iconID != 061545 && iconID != 061503) iconID = iconSet.GetIconID(jobID);
+                    if (iconID != 061545 && iconID != 061503 && iconID != 061523)
+                        iconID = iconSet.GetIconID(jobID);
                     npObject.SetIconScale(scale);
                 }
 
