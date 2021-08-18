@@ -236,7 +236,7 @@ namespace JobIcons
                 {
                     var iconSet = Configuration.GetIconSet(jobID);
                     var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                    if (iconID != 061545 && iconID != 061503 && iconID != 061523)
+                    if (iconID != 061545 && iconID != 061503/* && iconID != 061523*/)
                         iconID = iconSet.GetIconID(jobID);
                     npObject.SetIconScale(scale);
                 }
