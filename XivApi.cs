@@ -1,6 +1,5 @@
 ﻿using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Game.ClientState.Actors;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -9,6 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Logging;
 
 namespace JobIcons
 {
@@ -16,8 +19,7 @@ namespace JobIcons
     {
         public static int ThreadID => System.Threading.Thread.CurrentThread.ManagedThreadId;
 
-        private readonly DalamudPluginInterface Interface;
-        private readonly PluginAddressResolver Address;
+        private static JobIconsPlugin _plugin;
 
         private readonly SetNamePlateDelegate SetNamePlate;
         private readonly Framework_GetUIModuleDelegate GetUIModule;
@@ -27,17 +29,16 @@ namespace JobIcons
         private readonly AtkResNode_SetPositionShortDelegate SetNodePosition;
         private readonly BattleCharaStore_LookupBattleCharaByObjectIDDelegate LookupBattleCharaByObjectID;
 
-        public static void Initialize(DalamudPluginInterface pluginInterface, PluginAddressResolver address)
+        public static void Initialize(JobIconsPlugin plugin,PluginAddressResolver address)
         {
-            Instance ??= new XivApi(pluginInterface, address);
+            _plugin ??= plugin;
+            Instance ??= new XivApi(plugin.Interface, address);
         }
 
         private static XivApi Instance;
 
         private XivApi(DalamudPluginInterface pluginInterface, PluginAddressResolver address)
         {
-            Interface = pluginInterface;
-            Address = address;
 
             SetNamePlate = Marshal.GetDelegateForFunctionPointer<SetNamePlateDelegate>(address.AddonNamePlate_SetNamePlatePtr);
             GetUIModule = Marshal.GetDelegateForFunctionPointer<Framework_GetUIModuleDelegate>(address.Framework_GetUIModulePtr);
@@ -49,7 +50,8 @@ namespace JobIcons
 
             EmptySeStringPtr = StringToSeStringPtr("");
 
-            Interface.ClientState.OnLogout += OnLogout_ResetRaptureAtkModule;
+            _plugin.ClientState.Logout += OnLogout_ResetRaptureAtkModule;
+
 
 
         }
@@ -58,7 +60,7 @@ namespace JobIcons
 
         public void Dispose()
         {
-            Interface.ClientState.OnLogout -= OnLogout_ResetRaptureAtkModule;
+            _plugin.ClientState.Logout -= OnLogout_ResetRaptureAtkModule;
             Marshal.FreeHGlobal(EmptySeStringPtr);
         }
 
@@ -72,7 +74,7 @@ namespace JobIcons
             {
                 if (_RaptureAtkModulePtr == IntPtr.Zero)
                 {
-                    var frameworkPtr = Instance.Interface.Framework.Address.BaseAddress;
+                    var frameworkPtr = _plugin.Framework.Address.BaseAddress;
                     var uiModulePtr = Instance.GetUIModule(frameworkPtr);
 
                     unsafe
@@ -106,7 +108,7 @@ namespace JobIcons
             }
             var bytes = new byte[offset];
             Marshal.Copy(seStringPtr, bytes, 0, offset);
-            return Instance.Interface.SeStringManager.Parse(bytes);
+            return Dalamud.Game.Text.SeStringHandling.SeString.Parse(bytes);
         }
 
         internal static IntPtr StringToSeStringPtr(string rawText)
@@ -122,37 +124,47 @@ namespace JobIcons
 
         #endregion
 
-        internal static SafeAddonNamePlate GetSafeAddonNamePlate() => new SafeAddonNamePlate(Instance.Interface);
+        internal static SafeAddonNamePlate GetSafeAddonNamePlate() => new SafeAddonNamePlate(_plugin.Interface);
 
-        internal static bool IsLocalPlayer(int actorID) => Instance.Interface.ClientState.LocalPlayer?.ActorId == actorID;
+        internal static bool IsLocalPlayer(uint actorID) => _plugin.ClientState.LocalPlayer?.ObjectId == actorID;
 
-        internal static bool IsPartyMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+        internal static bool IsPartyMember(uint actorID) => Instance.IsObjectIDInParty(_plugin.Address.GroupManagerPtr, actorID) == 1;
 
-        internal static bool IsAllianceMember(int actorID) => Instance.IsObjectIDInParty(Instance.Address.GroupManagerPtr, actorID) == 1;
+        internal static bool IsAllianceMember(uint actorID) => Instance.IsObjectIDInParty(_plugin.Address.GroupManagerPtr, actorID) == 1;
 
-        internal static bool IsPlayerCharacter(int actorID)
+        internal static bool IsPlayerCharacter(uint actorID)
         {
-            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
-            if (address == IntPtr.Zero)
-                return false;
+            foreach (var obj in _plugin.ObjectTable)
+            {
+                if (obj == null) continue;
+                if (obj.ObjectId == actorID) return obj.ObjectKind == ObjectKind.Player;
+            }
 
-            return (ObjectKind)Marshal.ReadByte(address + Dalamud.Game.ClientState.Structs.ActorOffsets.ObjectKind) == ObjectKind.Player;
+            return false;
         }
 
-        internal static uint GetJobId(int actorID)
+        internal static uint GetJobId(uint actorID)
         {
-            var address = Instance.LookupBattleCharaByObjectID(Instance.Address.BattleCharaStorePtr, actorID);
-            if (address == IntPtr.Zero)
-                return 0;
+            //var address = Instance.LookupBattleCharaByObjectID(_plugin.Address.BattleCharaStorePtr, actorID);
+            //if (address == IntPtr.Zero)
+            //    return 0;
+            //var actor = Marshal.PtrToStructure<PlayerCharacter>(address);
 
-            return Marshal.ReadByte(address + Dalamud.Game.ClientState.Structs.ActorOffsets.ClassJob);
+            //return actor == null ? 0: actor.ClassJob.Id;
+            foreach (var obj in _plugin.ObjectTable)
+            {
+                if (obj == null) continue;
+                if (obj.ObjectId == actorID) return ((PlayerCharacter)obj).ClassJob.Id;
+            }
+
+            return 0;
         }
 
         internal class SafeAddonNamePlate
         {
             private readonly DalamudPluginInterface Interface;
 
-            public IntPtr Pointer => Interface.Framework.Gui.GetUiObjectByName("NamePlate", 1);
+            public IntPtr Pointer => _plugin.GameGui.GetAddonByName("NamePlate", 1);
 
             public SafeAddonNamePlate(DalamudPluginInterface pluginInterface)
             {
@@ -295,15 +307,15 @@ namespace JobIcons
         [StructLayout(LayoutKind.Explicit, Size = 0x248)]
         public unsafe struct NamePlateInfo
         {
-            [FieldOffset(0x00)] public int ActorID;
+            [FieldOffset(0x00)] public uint ActorID;
             [FieldOffset(0x52)] public Utf8String Name;
             [FieldOffset(0xBD)] public Utf8String FcName;
             [FieldOffset(0x122)] public Utf8String Title;
             [FieldOffset(0x18A)] public Utf8String DisplayTitle;
             [FieldOffset(0x1F2)] public Utf8String LevelText;
-            //[FieldOffset(0x240)] public int Flags;
+            [FieldOffset(0x262)] public int Flags;
 
-            //public bool IsPrefixTitle => ((Flags >> (8 * 3)) & 0xFF) == 1;
+            public bool IsPrefixTitle => ((Flags >> (8 * 3)) & 0xFF) == 1;
         }
 
         internal class SafeNamePlateInfo

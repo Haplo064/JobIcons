@@ -5,10 +5,10 @@
     <Version>3.1.0.1</Version>
     <Authors>haplo, daemitus</Authors>
     <Company>-</Company>
-    <Description></Description>
+    <Description>
+    </Description>
     <PackageProjectUrl>https://github.com/haplo064/JobIcons</PackageProjectUrl>
   </PropertyGroup>
-
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -16,13 +16,12 @@
     <AssemblyName>JobIcons</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -33,7 +32,6 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -43,64 +41,61 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
   <PropertyGroup>
     <DalamudLibPath>D:\OG\FF14\Dalamud\</DalamudLibPath>
     <AssemblyVersion>3.1.0.2</AssemblyVersion>
     <FileVersion>3.1.0.2</FileVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="lib\**" />
     <EmbeddedResource Remove="lib\**" />
     <None Remove="lib\**" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="DalamudPackager" Version="1.2.0" />
     <PackageReference Include="ILRepack" Version="2.0.18" GeneratePathProperty="true" />
     <PackageReference Include="System.Collections.Specialized" Version="4.3.0" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.242703">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Include="Dalamud">
-      <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\Dalamud.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="FFXIVClientStructs">
-      <HintPath>D:\OG\FF14\Dalamud\FFXIVClientStructs.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\FFXIVClientStructs.dll</HintPath>
     </Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>D:\OG\FF14\Dalamud\ImGui.NET.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\ImGui.NET.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="ImGuiScene">
-      <HintPath>D:\OG\FF14\Dalamud\ImGuiScene.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\ImGuiScene.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Lumina">
-      <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\Lumina.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Lumina.Excel">
-      <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\Lumina.Excel.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>D:\OG\FF14\Dalamud\Newtonsoft.Json.dll</HintPath>
+      <HintPath>D:\OG\FF14\Dalamud5\6.0.0.0\Newtonsoft.Json.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <!--<Target Name="ILRepack" AfterTargets="Build" Condition=" '$(Configuration)' == 'Release' ">-->
   <Target Name="ILRepack" AfterTargets="Build">
     <ItemGroup>
       <InputAssemblies Include="$(TargetPath)" />
       <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)" />
     </ItemGroup>
-    <Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(DalamudLibPath) /out:$(TargetDir)$(TargetFileName) @(InputAssemblies, ' ')" />
+    <!--<Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(DalamudLibPath) /out:$(TargetDir)$(TargetFileName) @(InputAssemblies, ' ')" />-->
   </Target>
-
   <!--<Target Name="CleanOutDir" AfterTargets="ILRepack" Condition=" '$(Configuration)' == 'Release' ">-->
   <Target Name="CleanOutDir" AfterTargets="ILRepack">
     <ItemGroup>
@@ -109,60 +104,50 @@
     <Message Text="Deleting @(DeleteAssemblies)" Importance="high" />
     <Delete Files="@(DeleteAssemblies)" />
   </Target>
-
   <Target Name="PackagePlugin" AfterTargets="CleanOutDir" Condition=" '$(Configuration)' == 'Release' ">
     <Message Text="Starting DalamudPackager" Importance="high" />
     <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(OutputPath)" AssemblyName="$(AssemblyName)" VersionComponents="4" MakeZip="true" />
   </Target>
-
   <ItemGroup>
     <Reference Update="System">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Core">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Data">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Drawing">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.IO.Compression.FileSystem">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Numerics">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Runtime.Serialization">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Xml">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
   <ItemGroup>
     <Reference Update="System.Xml.Linq">
       <Private>false</Private>

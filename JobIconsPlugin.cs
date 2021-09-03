@@ -6,11 +6,18 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Data;
+using Dalamud.Game;
 using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.Gui;
+using Dalamud.Logging;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace JobIcons
 {
-    public partial class JobIconsPlugin : IDalamudPlugin
+    public class JobIconsPlugin : IDalamudPlugin
     {
         public string Name => "JobIcons";
 
@@ -19,9 +26,19 @@ namespace JobIcons
 
         internal DalamudPluginInterface Interface;
         internal JobIconsConfiguration Configuration;
+        public CommandManager CommandManager;
+        public Framework Framework;
+        public ChatGui ChatGui;
+        public SigScanner SigScanner;
+        public ClientState ClientState;
+        public ObjectTable ObjectTable;
+        public DataManager DataManager;
+        public GameGui GameGui;
+        public Dalamud.Game.ClientState.Conditions.Condition Condition;
         internal PluginAddressResolver Address;
         internal JobIconsGui PluginGui;
 
+        
         private Hook<SetNamePlateDelegate> SetNamePlateHook;
 
         private IntPtr EmptySeStringPtr;
@@ -30,11 +47,45 @@ namespace JobIcons
         private readonly IntPtr[] JobStr = new IntPtr[Enum.GetValues(typeof(Job)).Length];
         //private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
 
-        public unsafe void Initialize(DalamudPluginInterface pluginInterface)
+        public JobIconsPlugin(DalamudPluginInterface pluginInterface,
+            //BuddyList buddies,
+            ChatGui chat,
+            //ChatHandlers chatHandlers,
+            ClientState clientState,
+            CommandManager commands,
+            Condition condition,
+            DataManager data,
+            //FateTable fates,
+            //FlyTextGui flyText,
+            Framework framework,
+            GameGui gameGui,
+            //GameNetwork gameNetwork,
+            //JobGauges gauges,
+            //KeyState keyState,
+            //LibcFunction libcFunction,
+            ObjectTable objects,
+            //PartyFinderGui pfGui,
+            //PartyList party,
+            //SeStringManager seStringManager,
+            SigScanner sigScanner,
+            TargetManager targets
+            //ToastGui toasts
+            )
         {
+            Condition = condition;
+            DataManager = data;
+            ObjectTable = objects;
+            ClientState = clientState;
+            SigScanner = sigScanner;
+            ChatGui = chat;
+            Framework = framework;
+            CommandManager = commands;
             Interface = pluginInterface;
+            GameGui = gameGui;
 
-            Configuration = pluginInterface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
+            //Configuration.Init(this);
+
+            Configuration = Interface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
 
 
 
@@ -42,9 +93,9 @@ namespace JobIcons
             //PluginLog.LogInformation(XivApi.GetSeStringFromPtr(testStr).ToString());
             //InitJobStr();
             Address = new PluginAddressResolver();
-            Address.Setup(pluginInterface.TargetModuleScanner);
+            Address.Setup(SigScanner);
 
-            XivApi.Initialize(Interface, Address);
+            XivApi.Initialize(this,Address);
             IconSet.Initialize(this);
 
             SetNamePlateHook = new Hook<SetNamePlateDelegate>(Address.AddonNamePlate_SetNamePlatePtr, SetNamePlateDetour);
@@ -64,8 +115,8 @@ namespace JobIcons
                 HelpMessage = "Opens Job Icons config.",
                 ShowInHelp = true
             };
-            Interface.CommandManager.AddHandler(Command1, commandInfo);
-            Interface.CommandManager.AddHandler(Command2, commandInfo);
+            CommandManager.AddHandler(Command1, commandInfo);
+            CommandManager.AddHandler(Command2, commandInfo);
 
             Task.Run(() => FixNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
 
@@ -95,8 +146,8 @@ namespace JobIcons
 
         public void Dispose()
         {
-            Interface.CommandManager.RemoveHandler(Command1);
-            Interface.CommandManager.RemoveHandler(Command2);
+            CommandManager.RemoveHandler(Command1);
+            CommandManager.RemoveHandler(Command2);
 
             PluginGui.Dispose();
 

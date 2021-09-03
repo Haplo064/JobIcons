@@ -22,14 +22,13 @@ namespace JobIcons
         {
             this.plugin = plugin;
 
-            plugin.Interface.UiBuilder.OnOpenConfigUi += OnOpenConfigUi;
-            plugin.Interface.UiBuilder.OnBuildUi += OnBuildUi;
+            plugin.Interface.UiBuilder.Draw += OnBuildUi;
         }
 
         public void Dispose()
         {
-            plugin.Interface.UiBuilder.OnOpenConfigUi -= OnOpenConfigUi;
-            plugin.Interface.UiBuilder.OnBuildUi -= OnBuildUi;
+            
+            plugin.Interface.UiBuilder.Draw -= OnBuildUi;
         }
 
         public void ToggleConfigWindow()
@@ -41,7 +40,6 @@ namespace JobIcons
 
         private void SaveConfiguration() => plugin.SaveConfiguration();
 
-        private void OnOpenConfigUi(object sender, EventArgs evt) => isImguiConfigOpen = true;
 
         private unsafe void OnBuildUi()
         {
@@ -301,16 +299,16 @@ namespace JobIcons
 
                         ImGui.Separator();
 
-                        foreach (var actor in plugin.Interface.ClientState.Actors)
+                        foreach (var actor in plugin.ObjectTable)
                         {
-                            var isLocalPlayer = XivApi.IsLocalPlayer(actor.ActorId);
-                            var isParty = XivApi.IsPartyMember(actor.ActorId);
-                            var isPC = actor is Dalamud.Game.ClientState.Actors.Types.PlayerCharacter;
+                            var isLocalPlayer = XivApi.IsLocalPlayer(actor.ObjectId);
+                            var isParty = XivApi.IsPartyMember(actor.ObjectId);
+                            var isPC = actor is Dalamud.Game.ClientState.Objects.SubKinds.PlayerCharacter;
                             if (isLocalPlayer || isParty)
                             {
                                 DebugTableCell($"0x{actor.Address.ToInt64():X}", sizes);
-                                DebugTableCell(actor.ActorId.ToString(), sizes);
-                                DebugTableCell(actor.Name, sizes);
+                                DebugTableCell(actor.ObjectId.ToString(), sizes);
+                                DebugTableCell(actor.Name.TextValue, sizes);
                                 DebugTableCell(isLocalPlayer.ToString(), sizes);
                                 DebugTableCell(isParty.ToString(), sizes);
                                 DebugTableCell(isPC.ToString(), sizes);
@@ -382,7 +380,7 @@ namespace JobIcons
                                 DebugTableCell($"0x{npObject.Pointer.ToInt64():X}", sizes);
                                 DebugTableCell(npObject.IsVisible.ToString(), sizes);
                                 DebugTableCell(npObject.IsLocalPlayer.ToString(), sizes);
-                                DebugTableCell(npObject.Data.Layer.ToString(), sizes);
+                                DebugTableCell(npObject.Data.Priority.ToString(), sizes);
                                 DebugTableCell(npObject.Data.IconXAdjust.ToString(), sizes);
                                 DebugTableCell(npObject.Data.IconYAdjust.ToString(), sizes);
                                 DebugTableCell(imageX, sizes);
