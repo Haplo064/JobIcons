@@ -197,7 +197,7 @@ namespace JobIcons
                     continue;
 
                 var actorID = npInfo.Data.ActorID;
-                if (actorID == -1)
+                if (actorID == 0xE0000000)
                     continue;
 
                 var isPC = npInfo.IsPlayerCharacter();
@@ -246,10 +246,10 @@ namespace JobIcons
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             
             var actorID = npInfo.Data.ActorID;
-            if (actorID == -1)
+            if (actorID == 0xE0000000)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
-            if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
+            if (!npObject.IsPlayer)  // Only PlayerCharacters can have icons
             {
                 npObject.SetIconScale(1);
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);

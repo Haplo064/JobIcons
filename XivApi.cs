@@ -269,6 +269,8 @@ namespace JobIcons
 
             public unsafe bool IsLocalPlayer => Data.IsLocalPlayer;
 
+            public bool IsPlayer => Data.NameplateKind == 0;
+
             public void SetIconScale(float scale, bool force = false)
             {
                 // Leaving this conditional may help with XIVCombo not flickering

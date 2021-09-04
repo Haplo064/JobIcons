@@ -21,13 +21,13 @@ namespace JobIcons
         public JobIconsGui(JobIconsPlugin plugin)
         {
             this.plugin = plugin;
-
+            plugin.Interface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
             plugin.Interface.UiBuilder.Draw += OnBuildUi;
         }
 
         public void Dispose()
         {
-            
+            plugin.Interface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
             plugin.Interface.UiBuilder.Draw -= OnBuildUi;
         }
 
@@ -40,6 +40,7 @@ namespace JobIcons
 
         private void SaveConfiguration() => plugin.SaveConfiguration();
 
+        private void OnOpenConfigUi() => isImguiConfigOpen = true;
 
         private unsafe void OnBuildUi()
         {
@@ -453,7 +454,7 @@ namespace JobIcons
                         continue;
 
                     var actorID = npInfo.Data.ActorID;
-                    if (actorID == -1)
+                    if (actorID == 0xE0000000)
                         continue;
 
                     if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
