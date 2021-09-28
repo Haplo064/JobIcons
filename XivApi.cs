@@ -306,7 +306,7 @@ namespace JobIcons
                 //npObject->IconYAdjust = y;
             }
         }
-        [StructLayout(LayoutKind.Explicit, Size = 0x248)]
+        [StructLayout(LayoutKind.Explicit, Size = 0x248)] //Check this yourself since this is strange here in CN server.
         public unsafe struct NamePlateInfo
         {
             [FieldOffset(0x00)] public uint ActorID;

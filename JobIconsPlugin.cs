@@ -32,7 +32,7 @@ namespace JobIcons
         public SigScanner SigScanner;
         public ClientState ClientState;
         public ObjectTable ObjectTable;
-        public DataManager DataManager;
+        public static DataManager DataManager;
         public GameGui GameGui;
         public Dalamud.Game.ClientState.Conditions.Condition Condition;
         internal PluginAddressResolver Address;
@@ -103,13 +103,7 @@ namespace JobIcons
 
             EmptySeStringPtr = XivApi.StringToSeStringPtr("");
             InitJobStr();
-
-            for (var index = 0; index < Enum.GetValues(typeof(Job)).Length; index++)
-            {
-                var jobName = ((Job)index).GetName();
-                JobStr[index] = XivApi.StringToSeStringPtr($"[{jobName}]");
-            }
-
+            
             var commandInfo = new CommandInfo(CommandHandler)
             {
                 HelpMessage = "Opens Job Icons config.",
