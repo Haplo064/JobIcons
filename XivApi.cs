@@ -327,7 +327,7 @@ namespace JobIcons
 
             public SafeNamePlateInfo(IntPtr pointer)
             {
-                Pointer = pointer-0x10;
+                Pointer = pointer;//-0x10;
                 Data = Marshal.PtrToStructure<NamePlateInfo>(Pointer);
             }
 
@@ -370,16 +370,8 @@ namespace JobIcons
                 var stringPtr = Marshal.ReadIntPtr(stringPtrPtr);
                 return stringPtr;
             }
-            internal static string StringFromNativeUtf8(IntPtr nativeUtf8) {
-                int len = 0;
-                while (Marshal.ReadByte(nativeUtf8, len) != 0) ++len;
-                byte[] buffer = new byte[len];
-                Marshal.Copy(nativeUtf8, buffer, 0, buffer.Length);
-                return Encoding.UTF8.GetString(buffer);
-            }
 
-            //private string GetString(IntPtr stringPtr) => Marshal.PtrToStringAnsi(stringPtr);
-            private string GetString(IntPtr stringPtr) => StringFromNativeUtf8(stringPtr);
+            private string GetString(IntPtr stringPtr) => Marshal.PtrToStringUTF8(stringPtr);
         }
     }
 }
