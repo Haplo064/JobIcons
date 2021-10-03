@@ -390,18 +390,17 @@ namespace JobIcons
                                 DebugTableCell(scaleY, sizes);
                                 DebugTableCell(npObject.Data.NameplateKind.ToString(), sizes);
 
-                                //DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
-                                ////DebugTableCell(npInfo.Data.ActorID.ToString(), sizes);
-                                //DebugTableCell($"0x{npInfo.Data.ActorID:X}", sizes);
-                                //DebugTableCell(npInfo.Name, sizes);
-                                //DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ActorID).ToString(), sizes);
-                                //DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ActorID).ToString(), sizes);
-                                //DebugTableCell(XivApi.IsAllianceMember(npInfo.Data.ActorID).ToString(), sizes);
-                                //DebugTableCell(/*XivApi.GetJobId(npInfo.Data.ActorID).ToString()*/"1", sizes);
-                                //DebugTableCell(npInfo.Data.IsPrefixTitle.ToString(), sizes);
-                                //DebugTableCell(npInfo.Title, sizes);
-                                //DebugTableCell(npInfo.FcName, sizes);
-                                //DebugTableCell(npInfo.LevelText, sizes);
+                                DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
+                                DebugTableCell($"0x{npInfo.Data.ObjectID.ObjectID:X}", sizes);
+                                DebugTableCell(npInfo.Name, sizes);
+                                DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
+                                DebugTableCell(XivApi.IsAllianceMember(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
+                                DebugTableCell(XivApi.GetJobId(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
+                                DebugTableCell(npInfo.Data.IsPrefixTitle.ToString(), sizes);
+                                DebugTableCell(npInfo.Title, sizes);
+                                DebugTableCell(npInfo.FcName, sizes);
+                                DebugTableCell(npInfo.LevelText, sizes);
                             }
 
                             for (int i = 0; i < sizes.Length; i++)
@@ -453,7 +452,7 @@ namespace JobIcons
                     if (npInfo == null)
                         continue;
 
-                    var actorID = npInfo.Data.ActorID;
+                    var actorID = npInfo.Data.ObjectID.ObjectID;
                     if (actorID == 0xE0000000)
                         continue;
 

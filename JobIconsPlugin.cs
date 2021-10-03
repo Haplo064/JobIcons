@@ -190,7 +190,7 @@ namespace JobIcons
                 if (npInfo == null)
                     continue;
 
-                var actorID = npInfo.Data.ActorID;
+                var actorID = npInfo.Data.ObjectID.ObjectID;
                 if (actorID == 0xE0000000)
                     continue;
 
@@ -239,7 +239,7 @@ namespace JobIcons
             if (npInfo == null)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             
-            var actorID = npInfo.Data.ActorID;
+            var actorID = npInfo.Data.ObjectID.ObjectID;
             if (actorID == 0xE0000000)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 

@@ -154,7 +154,8 @@ namespace JobIcons
             foreach (var obj in _plugin.ObjectTable)
             {
                 if (obj == null) continue;
-                if (obj.ObjectId == actorID) return ((PlayerCharacter)obj).ClassJob.Id;
+                if (obj.ObjectId == actorID && obj is PlayerCharacter character) return character.ClassJob.Id;
+                return 0;
             }
 
             return 0;
@@ -306,29 +307,16 @@ namespace JobIcons
                 //npObject->IconYAdjust = y;
             }
         }
-        [StructLayout(LayoutKind.Explicit, Size = 0x248)] //Check this yourself since this is strange here in CN server.
-        public unsafe struct NamePlateInfo
-        {
-            [FieldOffset(0x00)] public uint ActorID;
-            [FieldOffset(0x52)] public Utf8String Name;
-            [FieldOffset(0xBD)] public Utf8String FcName;
-            [FieldOffset(0x122)] public Utf8String Title;
-            [FieldOffset(0x18A)] public Utf8String DisplayTitle;
-            [FieldOffset(0x1F2)] public Utf8String LevelText;
-            [FieldOffset(0x262)] public int Flags;
-
-            public bool IsPrefixTitle => ((Flags >> (8 * 3)) & 0xFF) == 1;
-        }
 
         internal class SafeNamePlateInfo
         {
             public readonly IntPtr Pointer;
-            public readonly NamePlateInfo Data;
+            public readonly RaptureAtkModule.NamePlateInfo Data;
 
             public SafeNamePlateInfo(IntPtr pointer)
             {
                 Pointer = pointer;//-0x10;
-                Data = Marshal.PtrToStructure<NamePlateInfo>(Pointer);
+                Data = Marshal.PtrToStructure<RaptureAtkModule.NamePlateInfo>(Pointer);
             }
 
             #region Getters
@@ -355,13 +343,13 @@ namespace JobIcons
 
             #endregion
 
-            public bool IsPlayerCharacter() => XivApi.IsPlayerCharacter(Data.ActorID);
+            public bool IsPlayerCharacter() => XivApi.IsPlayerCharacter(Data.ObjectID.ObjectID);
 
-            public bool IsPartyMember() => XivApi.IsPartyMember(Data.ActorID);
+            public bool IsPartyMember() => XivApi.IsPartyMember(Data.ObjectID.ObjectID);
 
-            public bool IsAllianceMember() => XivApi.IsAllianceMember(Data.ActorID);
+            public bool IsAllianceMember() => XivApi.IsAllianceMember(Data.ObjectID.ObjectID);
 
-            public uint GetJobID() => GetJobId(Data.ActorID);
+            public uint GetJobID() => GetJobId(Data.ObjectID.ObjectID);
 
             private unsafe IntPtr GetStringPtr(string name)
             {
