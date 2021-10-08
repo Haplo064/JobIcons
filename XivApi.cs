@@ -154,10 +154,8 @@ namespace JobIcons
             foreach (var obj in _plugin.ObjectTable)
             {
                 if (obj == null) continue;
-                if (obj.ObjectId == actorID && obj is PlayerCharacter character) return character.ClassJob.Id;
-                return 0;
+                if (obj.ObjectId == actorID && obj is PlayerCharacter character) {return character.ClassJob.Id;}
             }
-
             return 0;
         }
 
