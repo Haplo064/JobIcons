@@ -21,13 +21,13 @@ namespace JobIcons
     internal delegate IntPtr UIModule_GetRaptureAtkModuleDelegate(IntPtr uiModule);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    internal delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, int actorId);
+    internal delegate byte GroupManager_IsObjectIDInPartyDelegate(IntPtr groupManager, uint actorId);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    internal delegate byte GroupManager_IsObjectIDInAllianceDelegate(IntPtr groupManager, int actorId);
+    internal delegate byte GroupManager_IsObjectIDInAllianceDelegate(IntPtr groupManager, uint actorId);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    internal delegate IntPtr BattleCharaStore_LookupBattleCharaByObjectIDDelegate(IntPtr battleCharaStore, int actorId);
+    internal delegate IntPtr BattleCharaStore_LookupBattleCharaByObjectIDDelegate(IntPtr battleCharaStore, uint actorId);
 
     internal sealed class PluginAddressResolver : BaseAddressResolver
     {

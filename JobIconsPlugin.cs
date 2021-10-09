@@ -6,10 +6,18 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Data;
+using Dalamud.Game;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.Gui;
+using Dalamud.Logging;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.Text.SeStringHandling;
 
 namespace JobIcons
 {
-    public partial class JobIconsPlugin : IDalamudPlugin
+    public class JobIconsPlugin : IDalamudPlugin
     {
         public string Name => "JobIcons";
 
@@ -18,51 +26,122 @@ namespace JobIcons
 
         internal DalamudPluginInterface Interface;
         internal JobIconsConfiguration Configuration;
+        public CommandManager CommandManager;
+        public Framework Framework;
+        public ChatGui ChatGui;
+        public SigScanner SigScanner;
+        public ClientState ClientState;
+        public ObjectTable ObjectTable;
+        public static DataManager DataManager;
+        public GameGui GameGui;
+        public Dalamud.Game.ClientState.Conditions.Condition Condition;
         internal PluginAddressResolver Address;
         internal JobIconsGui PluginGui;
 
+        
         private Hook<SetNamePlateDelegate> SetNamePlateHook;
 
         private IntPtr EmptySeStringPtr;
 
         private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
+        private readonly IntPtr[] JobStr = new IntPtr[Enum.GetValues(typeof(Job)).Length];
+        //private readonly OrderedDictionary LastKnownJobID = new OrderedDictionary();
 
-        public unsafe void Initialize(DalamudPluginInterface pluginInterface)
+        public JobIconsPlugin(DalamudPluginInterface pluginInterface,
+            //BuddyList buddies,
+            ChatGui chat,
+            //ChatHandlers chatHandlers,
+            ClientState clientState,
+            CommandManager commands,
+            Condition condition,
+            DataManager data,
+            //FateTable fates,
+            //FlyTextGui flyText,
+            Framework framework,
+            GameGui gameGui,
+            //GameNetwork gameNetwork,
+            //JobGauges gauges,
+            //KeyState keyState,
+            //LibcFunction libcFunction,
+            ObjectTable objects,
+            //PartyFinderGui pfGui,
+            //PartyList party,
+            //SeStringManager seStringManager,
+            SigScanner sigScanner,
+            TargetManager targets
+            //ToastGui toasts
+            )
         {
+            Condition = condition;
+            DataManager = data;
+            ObjectTable = objects;
+            ClientState = clientState;
+            SigScanner = sigScanner;
+            ChatGui = chat;
+            Framework = framework;
+            CommandManager = commands;
             Interface = pluginInterface;
+            GameGui = gameGui;
 
-            Configuration = pluginInterface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
+            //Configuration.Init(this);
 
+            Configuration = Interface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
+
+
+
+            //var testStr = XivApi.StringToSeStringPtr("TEst");
+            //PluginLog.LogInformation(XivApi.GetSeStringFromPtr(testStr).ToString());
+            //InitJobStr();
             Address = new PluginAddressResolver();
-            Address.Setup(pluginInterface.TargetModuleScanner);
+            Address.Setup(SigScanner);
 
-            XivApi.Initialize(Interface, Address);
+            XivApi.Initialize(this,Address);
             IconSet.Initialize(this);
 
-            SetNamePlateHook = new Hook<SetNamePlateDelegate>(Address.AddonNamePlate_SetNamePlatePtr, new SetNamePlateDelegate(SetNamePlateDetour), this);
+            SetNamePlateHook = new Hook<SetNamePlateDelegate>(Address.AddonNamePlate_SetNamePlatePtr, SetNamePlateDetour);
             SetNamePlateHook.Enable();
 
             EmptySeStringPtr = XivApi.StringToSeStringPtr("");
-
+            InitJobStr();
+            
             var commandInfo = new CommandInfo(CommandHandler)
             {
                 HelpMessage = "Opens Job Icons config.",
                 ShowInHelp = true
             };
-            Interface.CommandManager.AddHandler(Command1, commandInfo);
-            Interface.CommandManager.AddHandler(Command2, commandInfo);
+            CommandManager.AddHandler(Command1, commandInfo);
+            CommandManager.AddHandler(Command2, commandInfo);
 
             Task.Run(() => FixNamePlates(FixNonPlayerCharacterNamePlatesTokenSource.Token));
 
             PluginGui = new JobIconsGui(this);
         }
 
+        private void InitJobStr()
+        {
+            for (var index = 0; index < Enum.GetValues(typeof(Job)).Length; index++)
+            {
+                var jobName = ((Job)index).GetName();
+                JobStr[index] = XivApi.StringToSeStringPtr($"[{jobName}]");
+                //PluginLog.LogInformation(JobStr[index].ToString("X"));
+                //PluginLog.LogInformation(XivApi.GetSeStringFromPtr(JobStr[index]).ToString());
+            }
+        }
+
+        private void DisposeJobStr()
+        {
+            foreach (var seStrPtr in JobStr)
+            {
+                Marshal.FreeHGlobal(seStrPtr);
+            }
+        }
+
         internal void SaveConfiguration() => Interface.SavePluginConfig(Configuration);
 
         public void Dispose()
         {
-            Interface.CommandManager.RemoveHandler(Command1);
-            Interface.CommandManager.RemoveHandler(Command2);
+            CommandManager.RemoveHandler(Command1);
+            CommandManager.RemoveHandler(Command2);
 
             PluginGui.Dispose();
 
@@ -72,6 +151,7 @@ namespace JobIcons
             XivApi.DisposeInstance();
             FixNonPlayerCharacterNamePlatesTokenSource.Cancel();
             Marshal.FreeHGlobal(EmptySeStringPtr);
+            DisposeJobStr();
         }
 
         private void CommandHandler(string command, string arguments) => PluginGui.ToggleConfigWindow();
@@ -110,8 +190,8 @@ namespace JobIcons
                 if (npInfo == null)
                     continue;
 
-                var actorID = npInfo.Data.ActorID;
-                if (actorID == -1)
+                var actorID = npInfo.Data.ObjectID.ObjectID;
+                if (actorID == 0xE0000000)
                     continue;
 
                 var isPC = npInfo.IsPlayerCharacter();
@@ -141,15 +221,16 @@ namespace JobIcons
             {
                 PluginLog.Error(ex, $"SetNamePlateDetour encountered a critical error");
             }
-
+            
             return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
         }
 
         internal IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
+            
             if (!Configuration.Enabled)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-
+            
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
             if (npObject == null)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
@@ -157,17 +238,16 @@ namespace JobIcons
             var npInfo = npObject.NamePlateInfo;
             if (npInfo == null)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-
-            var actorID = npInfo.Data.ActorID;
-            if (actorID == -1)
+            
+            var actorID = npInfo.Data.ObjectID.ObjectID;
+            if (actorID == 0xE0000000)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
-            if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
+            if (!npObject.IsPlayer)  // Only PlayerCharacters can have icons
             {
                 npObject.SetIconScale(1);
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             }
-
             var jobID = npInfo.GetJobID();
             if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
             {
@@ -185,7 +265,7 @@ namespace JobIcons
             // Prune the pool a little.
             while (LastKnownJobID.Count > 500)
                 LastKnownJobID.RemoveAt(0);
-
+            
             var isLocalPlayer = npObject.IsLocalPlayer;
             var isPartyMember = npInfo.IsPartyMember();
             var isAllianceMember = npInfo.IsAllianceMember();
@@ -197,12 +277,25 @@ namespace JobIcons
 
             if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
             {
-                var iconSet = Configuration.GetIconSet(jobID);
-                var scale = Configuration.Scale * iconSet.ScaleMultiplier;
-                iconID = iconSet.GetIconID(jobID);
+                if (Configuration.ShowIcon)
+                {
+                    var iconSet = Configuration.GetIconSet(jobID);
+                    var scale = Configuration.Scale * iconSet.ScaleMultiplier;
+                    if (iconID != 061545 && iconID != 061503/* && iconID != 061523*/)
+                        iconID = iconSet.GetIconID(jobID);
+                    npObject.SetIconScale(scale);
+                }
+
 
                 if (!Configuration.ShowName)
                     name = EmptySeStringPtr;
+                else
+                {
+                    if (Configuration.JobName)
+                    {
+                        name = JobStr[jobID];
+                    }
+                }
 
                 if (!Configuration.ShowTitle)
                     title = EmptySeStringPtr;
@@ -210,9 +303,11 @@ namespace JobIcons
                 if (!Configuration.ShowFcName)
                     fcName = EmptySeStringPtr;
 
-                npObject.SetIconScale(scale);
                 var result = SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-                npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+                if (Configuration.LocationAdjust)
+                {
+                    npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+                }
 
                 return result;
             }

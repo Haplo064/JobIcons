@@ -30,7 +30,10 @@ namespace JobIcons
         public bool AllianceIcons { get; set; } = false;
         public bool EveryoneElseIcons { get; set; } = false;
 
+        public bool LocationAdjust { get; set; } = false;
+        public bool ShowIcon { get; set; } = false;
         public bool ShowName { get; set; } = false;
+        public bool JobName { get; set; } = false;
         public bool ShowTitle { get; set; } = false;
         public bool ShowFcName { get; set; } = false;
 

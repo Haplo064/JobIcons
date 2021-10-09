@@ -1,4 +1,6 @@
 using System;
+using Dalamud.Plugin;
+using Lumina.Excel.GeneratedSheets;
 
 namespace JobIcons
 {
@@ -43,6 +45,8 @@ namespace JobIcons
         BLU = 36,
         GNB = 37,
         DNC = 38,
+        //SAG = 39,
+        //REP = 40
     }
 
     internal static class JobExtensions
@@ -61,14 +65,16 @@ namespace JobIcons
                 case Job.CNJ:
                 case Job.AST:
                 case Job.WHM:
-                case Job.SCH: return JobRole.Heal;
+                case Job.SCH: 
+                /*case Job.SAG:*/ return JobRole.Heal;
                 case Job.PGL:
                 case Job.LNC:
                 case Job.MNK:
                 case Job.DRG:
                 case Job.ROG:
                 case Job.NIN:
-                case Job.SAM: return JobRole.Melee;
+                case Job.SAM: 
+                /*case Job.REP:*/ return JobRole.Melee;
                 case Job.ARC:
                 case Job.BRD:
                 case Job.MCH:
@@ -92,6 +98,12 @@ namespace JobIcons
                 case Job.FSH: return JobRole.Gatherer;
                 default: throw new ArgumentException($"Unknown jobID {(int)job}");
             }
+        }
+
+        public static string GetName(this Job job)
+        { 
+            return JobIconsPlugin.DataManager.Excel.GetSheet<ClassJob>().GetRow((uint)job).Name ?? "ERROR";
+            
         }
     }
 }
