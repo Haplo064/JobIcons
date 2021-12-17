@@ -45,8 +45,8 @@ namespace JobIcons
         BLU = 36,
         GNB = 37,
         DNC = 38,
-        //SAG = 39,
-        //REP = 40
+        REP = 39,
+        SAG = 40
     }
 
     internal static class JobExtensions
@@ -66,7 +66,7 @@ namespace JobIcons
                 case Job.AST:
                 case Job.WHM:
                 case Job.SCH: 
-                /*case Job.SAG:*/ return JobRole.Heal;
+                case Job.SAG: return JobRole.Heal;
                 case Job.PGL:
                 case Job.LNC:
                 case Job.MNK:
@@ -74,7 +74,7 @@ namespace JobIcons
                 case Job.ROG:
                 case Job.NIN:
                 case Job.SAM: 
-                /*case Job.REP:*/ return JobRole.Melee;
+                case Job.REP: return JobRole.Melee;
                 case Job.ARC:
                 case Job.BRD:
                 case Job.MCH:
