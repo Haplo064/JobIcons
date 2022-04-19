@@ -1,4 +1,5 @@
-﻿using FFXIVClientStructs.FFXIV.Client.UI;
+﻿using Dalamud.Interface;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
 using System;
 using System.Linq;
@@ -172,6 +173,8 @@ namespace JobIcons
                     updateRequired = true;
                 }
 
+                ImGui.Indent(25 * ImGuiHelpers.GlobalScale);
+
                 var jobName = Configuration.JobName;
                 if (ImGui.Checkbox("Replace Name by Job (Requires Name)", ref jobName)) {
                     if (!jobName)
@@ -188,6 +191,8 @@ namespace JobIcons
                     Configuration.ShowTitle = showTitle;
                     updateRequired = true;
                 }
+
+                ImGui.Indent(-25 * ImGuiHelpers.GlobalScale);
 
                 var showFcName = Configuration.ShowFcName;
                 if (ImGui.Checkbox("Show FC", ref showFcName))

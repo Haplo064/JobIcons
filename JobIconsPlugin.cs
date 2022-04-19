@@ -220,19 +220,25 @@ namespace JobIcons
             catch (Exception ex)
             {
                 PluginLog.Error(ex, $"SetNamePlateDetour encountered a critical error");
+
+                var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
+                if (npObject != null)
+                    npObject.SetIconScale(1f);
+
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
             }
-            
-            return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
         }
 
         internal IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconID)
         {
-            
-            if (!Configuration.Enabled)
-                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
-            
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
+
             if (npObject == null)
+                return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
+            else
+                npObject.SetIconScale(1f);
+
+            if (!Configuration.Enabled || ClientState.IsPvP)
                 return SetNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconID);
 
             var npInfo = npObject.NamePlateInfo;
