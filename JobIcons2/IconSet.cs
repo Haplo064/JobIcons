@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace JobIcons
+namespace JobIcons2
 {
     internal class IconSet
     {
         #region static
 
-        private static JobIconsPlugin _plugin;
+        private static JobIcons2Plugin _plugin;
 
-        public static void Initialize(JobIconsPlugin plugin)
+        public static void Initialize(JobIcons2Plugin plugin)
         {
             _plugin = plugin;
 

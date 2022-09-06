@@ -1,6 +1,6 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JobIcons", "JobIcons\JobIcons.csproj", "{F6B2C0AB-FCD3-4CE2-8914-AEA9310795F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JobIcons2", "JobIcons2\JobIcons2.csproj", "{F6B2C0AB-FCD3-4CE2-8914-AEA9310795F7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

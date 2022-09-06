@@ -13,24 +13,24 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Gui;
 using Dalamud.Logging;
 
-namespace JobIcons
+namespace JobIcons2
 {
-    public class JobIconsPlugin : IDalamudPlugin
+    public class JobIcons2Plugin : IDalamudPlugin
     {
-        public string Name => "JobIcons";
+        public string Name => "JobIcons2";
 
-        private const string Command1 = "/jicons";
-        private const string Command2 = "/jobicons";
+        private const string Command1 = "/jicons2";
+        private const string Command2 = "/jobicons2";
 
         internal readonly DalamudPluginInterface Interface;
-        internal readonly JobIconsConfiguration Configuration;
+        internal readonly JobIcons2Configuration Configuration;
         private readonly CommandManager _commandManager;
         public readonly ClientState ClientState;
         public readonly ObjectTable ObjectTable;
         public static DataManager DataManager { get; private set; }
         public readonly GameGui GameGui;
         internal readonly PluginAddressResolver Address;
-        private readonly JobIconsGui _pluginGui;
+        private readonly JobIcons2Gui _pluginGui;
 
         
         private readonly Hook<SetNamePlateDelegate> _setNamePlateHook;
@@ -40,7 +40,7 @@ namespace JobIcons
         private readonly OrderedDictionary _lastKnownJobId = new();
         private readonly IntPtr[] _jobStr = new IntPtr[Enum.GetValues(typeof(Job)).Length];
 
-        public JobIconsPlugin(DalamudPluginInterface pluginInterface,
+        public JobIcons2Plugin(DalamudPluginInterface pluginInterface,
             ClientState clientState,
             CommandManager commands,
             DataManager data,
@@ -56,7 +56,7 @@ namespace JobIcons
             Interface = pluginInterface;
             GameGui = gameGui;
 
-            Configuration = Interface.GetPluginConfig() as JobIconsConfiguration ?? new JobIconsConfiguration();
+            Configuration = Interface.GetPluginConfig() as JobIcons2Configuration ?? new JobIcons2Configuration();
             
             Address = new PluginAddressResolver();
             Address.Setup(sigScanner);
@@ -80,7 +80,7 @@ namespace JobIcons
 
             Task.Run(() => FixNamePlates(_fixNonPlayerCharacterNamePlatesTokenSource.Token));
 
-            _pluginGui = new JobIconsGui(this);
+            _pluginGui = new JobIcons2Gui(this);
         }
 
         private void InitJobStr()

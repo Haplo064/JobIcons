@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace JobIcons
+namespace JobIcons2
 {
     internal enum JobRole : uint
     {

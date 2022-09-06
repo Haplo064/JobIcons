@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace JobIcons
+namespace JobIcons2
 {
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
     internal delegate IntPtr SetNamePlateDelegate(IntPtr addon, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId);

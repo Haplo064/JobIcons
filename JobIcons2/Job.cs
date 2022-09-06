@@ -1,7 +1,7 @@
 using System;
 using Lumina.Excel.GeneratedSheets;
 
-namespace JobIcons
+namespace JobIcons2
 {
     // ReSharper disable InconsistentNaming
     internal enum Job : uint
@@ -105,7 +105,7 @@ namespace JobIcons
 
         public static string GetName(this Job job)
         { 
-            return JobIconsPlugin.DataManager.Excel.GetSheet<ClassJob>()?.GetRow((uint)job)?.Name ?? "ERROR";
+            return JobIcons2Plugin.DataManager.Excel.GetSheet<ClassJob>()?.GetRow((uint)job)?.Name ?? "ERROR";
         }
     }
 }

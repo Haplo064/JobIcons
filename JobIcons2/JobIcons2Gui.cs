@@ -3,11 +3,11 @@ using ImGuiNET;
 using System;
 using System.Numerics;
 
-namespace JobIcons
+namespace JobIcons2
 {
-    internal class JobIconsGui : IDisposable
+    internal class JobIcons2Gui : IDisposable
     {
-        private readonly JobIconsPlugin _plugin;
+        private readonly JobIcons2Plugin _plugin;
 
 #if DEBUG
         private bool _isImguiConfigOpen = true;
@@ -15,7 +15,7 @@ namespace JobIcons
         private bool _isImguiConfigOpen;
 #endif
 
-        public JobIconsGui(JobIconsPlugin plugin)
+        public JobIcons2Gui(JobIcons2Plugin plugin)
         {
             _plugin = plugin;
             plugin.Interface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
@@ -33,7 +33,7 @@ namespace JobIcons
             _isImguiConfigOpen = !_isImguiConfigOpen;
         }
 
-        private JobIconsConfiguration Configuration => _plugin.Configuration;
+        private JobIcons2Configuration Configuration => _plugin.Configuration;
 
         private void SaveConfiguration() => _plugin.SaveConfiguration();
 
@@ -51,7 +51,7 @@ namespace JobIcons
                 var updateRequired = false;
 
                 ImGui.SetNextWindowSize(new Vector2(500, 500), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin("JobIcons Config", ref _isImguiConfigOpen))
+                if (ImGui.Begin("JobIcons2 Config", ref _isImguiConfigOpen))
                 {
 
                     if (ImGui.BeginTabBar("MainConfig"))

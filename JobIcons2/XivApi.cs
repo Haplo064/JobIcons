@@ -10,16 +10,16 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
-namespace JobIcons
+namespace JobIcons2
 {
     internal class XivApi : IDisposable
     {
-        private static JobIconsPlugin _plugin;
+        private static JobIcons2Plugin _plugin;
         
         private readonly GroupManagerIsObjectIdInPartyDelegate _isObjectIdInParty;
         private readonly AtkResNodeSetScaleDelegate _setNodeScale;
 
-        public static void Initialize(JobIconsPlugin plugin,PluginAddressResolver address)
+        public static void Initialize(JobIcons2Plugin plugin,PluginAddressResolver address)
         {
             _plugin ??= plugin;
             _instance ??= new XivApi(address);

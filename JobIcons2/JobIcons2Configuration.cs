@@ -1,9 +1,9 @@
 ﻿using Dalamud.Configuration;
 using System;
 
-namespace JobIcons
+namespace JobIcons2
 {
-    public class JobIconsConfiguration : IPluginConfiguration
+    public class JobIcons2Configuration : IPluginConfiguration
     {
         public int Version { get; set; } = 0;
 
