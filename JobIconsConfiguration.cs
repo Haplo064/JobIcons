@@ -25,21 +25,21 @@ namespace JobIcons
         public short XAdjust { get; set; } = -13;
         public short YAdjust { get; set; } = 55;
 
-        public bool SelfIcon { get; set; } = false;
-        public bool PartyIcons { get; set; } = false;
-        public bool AllianceIcons { get; set; } = false;
-        public bool EveryoneElseIcons { get; set; } = false;
+        public bool SelfIcon { get; set; }
+        public bool PartyIcons { get; set; }
+        public bool AllianceIcons { get; set; }
+        public bool EveryoneElseIcons { get; set; }
 
-        public bool LocationAdjust { get; set; } = false;
-        public bool ShowIcon { get; set; } = false;
-        public bool ShowName { get; set; } = false;
-        public bool JobName { get; set; } = false;
-        public bool ShowTitle { get; set; } = false;
-        public bool ShowFcName { get; set; } = false;
+        public bool LocationAdjust { get; set; }
+        public bool ShowIcon { get; set; }
+        public bool ShowName { get; set; }
+        public bool JobName { get; set; }
+        public bool ShowTitle { get; set; }
+        public bool ShowFcName { get; set; }
 
-        internal IconSet GetIconSet(uint jobID)
+        internal IconSet GetIconSet(uint jobId)
         {
-            var job = (Job)jobID;
+            var job = (Job)jobId;
             var jobRole = job.GetRole();
             return jobRole switch
             {
@@ -52,11 +52,6 @@ namespace JobIcons
                 JobRole.Gatherer => IconSet.Get(GatheringIconSetName),
                 _ => throw new ArgumentException($"Unknown jobID {(int)job}"),
             };
-        }
-
-        internal int GetIconID(uint jobID)
-        {
-            return GetIconSet(jobID).GetIconID(jobID);
         }
     }
 }

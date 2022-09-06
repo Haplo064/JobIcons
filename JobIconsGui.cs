@@ -1,69 +1,58 @@
 ﻿using Dalamud.Interface;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
 using System;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace JobIcons
 {
     internal class JobIconsGui : IDisposable
     {
-        private readonly JobIconsPlugin plugin;
+        private readonly JobIconsPlugin _plugin;
 
 #if DEBUG
-        private bool isImguiConfigOpen = true;
+        private bool _isImguiConfigOpen = true;
 #else
-        private bool isImguiConfigOpen = false;
+        private bool _isImguiConfigOpen;
 #endif
 
         public JobIconsGui(JobIconsPlugin plugin)
         {
-            this.plugin = plugin;
+            _plugin = plugin;
             plugin.Interface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
             plugin.Interface.UiBuilder.Draw += OnBuildUi;
         }
 
         public void Dispose()
         {
-            plugin.Interface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
-            plugin.Interface.UiBuilder.Draw -= OnBuildUi;
+            _plugin.Interface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
+            _plugin.Interface.UiBuilder.Draw -= OnBuildUi;
         }
 
         public void ToggleConfigWindow()
         {
-            isImguiConfigOpen = !isImguiConfigOpen;
+            _isImguiConfigOpen = !_isImguiConfigOpen;
         }
 
-        private JobIconsConfiguration Configuration => plugin.Configuration;
+        private JobIconsConfiguration Configuration => _plugin.Configuration;
 
-        private void SaveConfiguration() => plugin.SaveConfiguration();
+        private void SaveConfiguration() => _plugin.SaveConfiguration();
 
-        private void OnOpenConfigUi() => isImguiConfigOpen = true;
+        private void OnOpenConfigUi() => _isImguiConfigOpen = true;
 
-        private unsafe void OnBuildUi()
+        private void OnBuildUi()
         {
             OnBuildUi_Config();
-#if DEBUG
-            OnBuildUi_Debug();
-#endif
         }
 
         private void OnBuildUi_Config()
         {
-            if (isImguiConfigOpen)
+            if (_isImguiConfigOpen)
             {
                 var updateRequired = false;
 
                 ImGui.SetNextWindowSize(new Vector2(500, 500), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin("JobIcons Config", ref isImguiConfigOpen))
+                if (ImGui.Begin("JobIcons Config", ref _isImguiConfigOpen))
                 {
-#if DEBUG
-                    if (ImGui.Button("Debug"))
-                        isImguiDebugOpen = !isImguiDebugOpen;
-#endif
 
                     if (ImGui.BeginTabBar("MainConfig"))
                     {
@@ -228,216 +217,50 @@ namespace JobIcons
             return false;
         }
 
-        private bool OnBuildUi_EditCustomIconSetTab(string label, int[] customIconSet)
+        private static bool OnBuildUi_EditCustomIconSetTab(string label, int[] customIconSet)
         {
             var updateRequired = false;
 
-            if (ImGui.BeginTabItem(label))
+            if (!ImGui.BeginTabItem(label)) return false;
+            ImGui.PushItemWidth(100);
+
+            var roles = (JobRole[])Enum.GetValues(typeof(JobRole));
+            foreach (var role in roles)
             {
-                ImGui.PushItemWidth(100);
-
-                var roles = (JobRole[])Enum.GetValues(typeof(JobRole));
-                foreach (var role in roles)
+                var jobs = role.GetJobs();
+                foreach (var job in jobs)
                 {
-                    var jobs = role.GetJobs();
-                    for (int i = 0; i < jobs.Length; i++)
-                    {
-                        var job = jobs[i];
-                        var customJobIndex = (int)job - 1;
-                        var iconID = customIconSet[customJobIndex];
-                        if (ImGui.InputInt(job.ToString(), ref iconID, 1, 100))
-                        {
-                            if (iconID < 0) iconID = 0;
-                            customIconSet[customJobIndex] = iconID;
-                            updateRequired = true;
-                        }
-                    }
-                    ImGui.Separator();
+                    var customJobIndex = (int)job - 1;
+                    var iconId = customIconSet[customJobIndex];
+                    if (!ImGui.InputInt(job.ToString(), ref iconId, 1, 100)) continue;
+                        
+                    if (iconId < 0) iconId = 0;
+                    customIconSet[customJobIndex] = iconId;
+                    updateRequired = true;
                 }
-
-                ImGui.PopItemWidth();
-                ImGui.EndTabItem();
+                ImGui.Separator();
             }
+
+            ImGui.PopItemWidth();
+            ImGui.EndTabItem();
 
             return updateRequired;
         }
 
-        private void OnBuildUi_AboutTab()
+        private static void OnBuildUi_AboutTab()
         {
-            if (ImGui.BeginTabItem("About"))
-            {
-                //ImGui.TextWrapped(XivApi.RaptureAtkModulePtr.ToInt64().ToString("X"));
-                ImGui.TextWrapped("");
-                ImGui.TextWrapped("- The scale is 1.0 for 'default', 2.0 for double etc.");
-                ImGui.TextWrapped("- Use X and Y Adjust to make the icon appear where you want, relative to the player.");
-                ImGui.TextWrapped("- The icons only apply to party members.");
-                ImGui.TextWrapped("- If there is a problem, let me (Haplo) know on Discord.");
-                ImGui.TextWrapped("\nShoutouts:");
-                ImGui.TextWrapped("Big shoutout to daemitus for the second re-write of the code. Without them, many features would have been much harder!");
-                ImGui.TextWrapped("And shoutouts to aers, adam, caraxi, goat and many others for allowing me to pester them for simple issues.");
-                ImGui.EndTabItem();
-            }
+            if (!ImGui.BeginTabItem("About")) return;
+            //ImGui.TextWrapped(XivApi.RaptureAtkModulePtr.ToInt64().ToString("X"));
+            ImGui.TextWrapped("");
+            ImGui.TextWrapped("- The scale is 1.0 for 'default', 2.0 for double etc.");
+            ImGui.TextWrapped("- Use X and Y Adjust to make the icon appear where you want, relative to the player.");
+            ImGui.TextWrapped("- The icons only apply to party members.");
+            ImGui.TextWrapped("- If there is a problem, let me (Haplo) know on Discord.");
+            ImGui.TextWrapped("\nShoutouts:");
+            ImGui.TextWrapped("Big shoutout to daemitus for the second re-write of the code. Without them, many features would have been much harder!");
+            ImGui.TextWrapped("And shoutouts to aers, adam, caraxi, goat and many others for allowing me to pester them for simple issues.");
+            ImGui.EndTabItem();
         }
-
-#if DEBUG
-
-        private bool isImguiDebugOpen = false;
-
-        private void OnBuildUi_Debug()
-        {
-            if (isImguiDebugOpen)
-            {
-                ImGui.SetNextWindowSize(new Vector2(500, 500), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin("JobIcons Debug", ref isImguiDebugOpen))
-                {
-                    ImGui.PushItemWidth(-1);
-
-                    if (ImGui.CollapsingHeader("PartyMembers"))
-                    {
-                        var headers = new string[] { "Address", "ActorID", "Name", "IsLocalPlayer", "IsParty", "isPC" };
-                        var sizes = new float[headers.Length];
-
-                        ImGui.Columns(headers.Length);
-                        for (int i = 0; i < headers.Length; i++)
-                        {
-                            DebugTableCell(headers[i], sizes);
-                        }
-
-                        ImGui.Separator();
-
-                        foreach (var actor in plugin.ObjectTable)
-                        {
-                            var isLocalPlayer = XivApi.IsLocalPlayer(actor.ObjectId);
-                            var isParty = XivApi.IsPartyMember(actor.ObjectId);
-                            var isPC = actor is Dalamud.Game.ClientState.Objects.SubKinds.PlayerCharacter;
-                            if (isLocalPlayer || isParty)
-                            {
-                                DebugTableCell($"0x{actor.Address.ToInt64():X}", sizes);
-                                DebugTableCell(actor.ObjectId.ToString(), sizes);
-                                DebugTableCell(actor.Name.TextValue, sizes);
-                                DebugTableCell(isLocalPlayer.ToString(), sizes);
-                                DebugTableCell(isParty.ToString(), sizes);
-                                DebugTableCell(isPC.ToString(), sizes);
-                            }
-                        }
-
-                        for (int i = 0; i < sizes.Length; i++)
-                        {
-                            ImGui.SetColumnWidth(i, sizes[i] + 20);
-                        }
-
-                        ImGui.Columns(1);
-                        ImGui.NewLine();
-                    }
-
-                    if (ImGui.CollapsingHeader("NamePlateObjects"))
-                    {
-                        var addon = XivApi.GetSafeAddonNamePlate();
-                        if (addon.Pointer == IntPtr.Zero)
-                        {
-                            ImGui.Text("Addon not available");
-                            ImGui.NewLine();
-                        }
-                        else
-                        {
-                            var headers = new string[] {
-                                "Index",
-                                "npObj", "Visible", "isLocalPlayer", "Layer", "XAdjust", "YAdjust", "XPos", "YPos", "XScale", "YScale", "Type",
-                                "npInfo"
-                              , "ActorID", "Name", "isPC", "isParty", "isAlliance", "JobID", "PrefixTitle", "Title", "FcName", "LevelText"
-                            };
-                            var sizes = new float[headers.Length];
-
-                            ImGui.Columns(headers.Length);
-
-                            for (int i = 0; i < headers.Length; i++)
-                            {
-                                DebugTableCell(headers[i], sizes);
-                            }
-
-                            ImGui.Separator();
-
-                            for (int i = 0; i < 50; i++)
-                            {
-                                var npObject = addon.GetNamePlateObject(i);
-                                if (npObject == null)
-                                {
-                                    for (int c = 0; c < headers.Length; c++)
-                                        DebugTableCell("npObj=null", sizes);
-                                    continue;
-                                }
-
-                                var npInfo = npObject.NamePlateInfo;
-                                if (npInfo == null) {
-                                    for (int c = 0; c < headers.Length; c++)
-                                        DebugTableCell("npInfo=null", sizes);
-                                    continue;
-                                }
-
-                                var imageNode = npObject.IconImageNode;
-                                string imageX, imageY, scaleX, scaleY;
-
-                                imageX = imageNode.AtkResNode.X.ToString();
-                                imageY = imageNode.AtkResNode.Y.ToString();
-                                scaleX = imageNode.AtkResNode.ScaleX.ToString();
-                                scaleY = imageNode.AtkResNode.ScaleY.ToString();
-
-                                DebugTableCell(i.ToString(), sizes);
-                                DebugTableCell($"0x{npObject.Pointer.ToInt64():X}", sizes);
-                                DebugTableCell(npObject.IsVisible.ToString(), sizes);
-                                DebugTableCell(npObject.IsLocalPlayer.ToString(), sizes);
-                                DebugTableCell(npObject.Data.Priority.ToString(), sizes);
-                                DebugTableCell(npObject.Data.IconXAdjust.ToString(), sizes);
-                                DebugTableCell(npObject.Data.IconYAdjust.ToString(), sizes);
-                                DebugTableCell(imageX, sizes);
-                                DebugTableCell(imageY, sizes);
-                                DebugTableCell(scaleX, sizes);
-                                DebugTableCell(scaleY, sizes);
-                                DebugTableCell(npObject.Data.NameplateKind.ToString(), sizes);
-
-                                DebugTableCell($"0x{npInfo.Pointer.ToInt64():X}", sizes);
-                                DebugTableCell($"0x{npInfo.Data.ObjectID.ObjectID:X}", sizes);
-                                DebugTableCell(npInfo.Name, sizes);
-                                DebugTableCell(XivApi.IsPlayerCharacter(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
-                                DebugTableCell(XivApi.IsPartyMember(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
-                                DebugTableCell(XivApi.IsAllianceMember(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
-                                DebugTableCell(XivApi.GetJobId(npInfo.Data.ObjectID.ObjectID).ToString(), sizes);
-                                DebugTableCell(npInfo.Data.IsPrefixTitle.ToString(), sizes);
-                                DebugTableCell(npInfo.Title, sizes);
-                                DebugTableCell(npInfo.FcName, sizes);
-                                DebugTableCell(npInfo.LevelText, sizes);
-                            }
-
-                            for (int i = 0; i < sizes.Length; i++)
-                            {
-                                ImGui.SetColumnWidth(i, sizes[i] + 20);
-                            }
-
-                            ImGui.Columns(1);
-                            ImGui.NewLine();
-                        }
-                    }
-
-                    ImGui.PopItemWidth();
-                }
-                ImGui.End();
-            }
-        }
-
-        private void DebugTableCell(string value, float[] sizes, bool nextColumn = true)
-        {
-            var width = ImGui.CalcTextSize(value).X;
-            var columnIndex = ImGui.GetColumnIndex();
-            var largest = sizes[columnIndex];
-            if (width > largest)
-                sizes[columnIndex] = width;
-            ImGui.Text(value);
-
-            if (nextColumn)
-                ImGui.NextColumn();
-        }
-
-#endif
 
         private void UpdateNamePlates()
         {
@@ -457,65 +280,64 @@ namespace JobIcons
                     if (npInfo == null)
                         continue;
 
-                    var actorID = npInfo.Data.ObjectID.ObjectID;
-                    if (actorID == 0xE0000000)
+                    var actorId = npInfo.Data.ObjectID.ObjectID;
+                    if (actorId == 0xE0000000)
                         continue;
 
                     if (!npInfo.IsPlayerCharacter())  // Only PlayerCharacters can have icons
                         continue;
 
-                    var jobID = npInfo.GetJobID();
-                    if (jobID < 1 || jobID >= Enum.GetValues(typeof(Job)).Length)
+                    var jobId = npInfo.GetJobId();
+                    if (jobId < 1 || jobId >= Enum.GetValues(typeof(Job)).Length)
                         continue;
 
-                    var isLocalPlayer = XivApi.IsLocalPlayer(actorID);
-                    var isPartyMember = XivApi.IsLocalPlayer(actorID);
-                    var isAllianceMember = XivApi.IsAllianceMember(actorID);
+                    var isLocalPlayer = XivApi.IsLocalPlayer(actorId);
+                    var isPartyMember = XivApi.IsLocalPlayer(actorId);
+                    var isAllianceMember = XivApi.IsAllianceMember(actorId);
 
                     var updateLocalPlayer = Configuration.SelfIcon && isLocalPlayer;
                     var updatePartyMember = Configuration.PartyIcons && isPartyMember;
                     var updateAllianceMember = Configuration.AllianceIcons && isAllianceMember;
                     var updateEveryoneElse = Configuration.EveryoneElseIcons && !isLocalPlayer && !isPartyMember && !isAllianceMember;
 
-                    if (updateLocalPlayer || updatePartyMember || updateAllianceMember || updateEveryoneElse)
-                    {
-                        var iconSet = Configuration.GetIconSet(jobID);
-                        // var iconID = iconSet.GetIconID(jobID);
-                        var scaleMult = iconSet.ScaleMultiplier;
+                    if (!updateLocalPlayer && !updatePartyMember && !updateAllianceMember && !updateEveryoneElse) continue;
+                    
+                    var iconSet = Configuration.GetIconSet(jobId);
+                    // var iconID = iconSet.GetIconID(jobID);
+                    var scaleMult = iconSet.ScaleMultiplier;
 
-                        npObject.SetIconScale(Configuration.Scale * scaleMult);
-                        npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
+                    npObject.SetIconScale(Configuration.Scale * scaleMult);
+                    npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
 
-                        //var isPrefixTitle = npInfo.Data.IsPrefixTitle;
+                    //var isPrefixTitle = npInfo.Data.IsPrefixTitle;
 
-                        // I couldn't find this in the NamePlateInfo, it'll fix itself the next time SetNamePlate is called by the game.
-                        //var displayTitle = true;
+                    // I couldn't find this in the NamePlateInfo, it'll fix itself the next time SetNamePlate is called by the game.
+                    //var displayTitle = true;
 
 
-                        // plugin.SetNamePlateDetour(npObject.Pointer, isPrefixTitle, displayTitle, npInfo.TitleAddress, npInfo.NameAddress, npInfo.FcNameAddress, iconID);
+                    // plugin.SetNamePlateDetour(npObject.Pointer, isPrefixTitle, displayTitle, npInfo.TitleAddress, npInfo.NameAddress, npInfo.FcNameAddress, iconID);
 
-                        //var title = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->DisplayTitle.StringPtr)));
-                        //var name = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->Name.StringPtr)));
-                        //var fcName = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->FcName.StringPtr)));
+                    //var title = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->DisplayTitle.StringPtr)));
+                    //var name = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->Name.StringPtr)));
+                    //var fcName = Encoding.UTF8.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(npi->FcName.StringPtr)));
 
-                        //var titlePtr = Marshal.AllocHGlobal(title.Length + 1);
-                        //var namePtr = Marshal.AllocHGlobal(name.Length + 1);
-                        //var fcNamePtr = Marshal.AllocHGlobal(fcName.Length + 1);
+                    //var titlePtr = Marshal.AllocHGlobal(title.Length + 1);
+                    //var namePtr = Marshal.AllocHGlobal(name.Length + 1);
+                    //var fcNamePtr = Marshal.AllocHGlobal(fcName.Length + 1);
 
-                        //Marshal.Copy(title, 0, titlePtr, title.Length);
-                        //Marshal.Copy(name, 0, namePtr, name.Length);
-                        //Marshal.Copy(fcName, 0, fcNamePtr, fcName.Length);
+                    //Marshal.Copy(title, 0, titlePtr, title.Length);
+                    //Marshal.Copy(name, 0, namePtr, name.Length);
+                    //Marshal.Copy(fcName, 0, fcNamePtr, fcName.Length);
 
-                        //Marshal.WriteByte(titlePtr + title.Length, 0);
-                        //Marshal.WriteByte(namePtr + name.Length, 0);
-                        //Marshal.WriteByte(fcNamePtr + fcName.Length, 0);
+                    //Marshal.WriteByte(titlePtr + title.Length, 0);
+                    //Marshal.WriteByte(namePtr + name.Length, 0);
+                    //Marshal.WriteByte(fcNamePtr + fcName.Length, 0);
 
-                        //plugin.SetNamePlateDetour(npObject.Pointer, isPrefixTitle, displayTitle, titlePtr, namePtr, fcNamePtr, iconID);
+                    //plugin.SetNamePlateDetour(npObject.Pointer, isPrefixTitle, displayTitle, titlePtr, namePtr, fcNamePtr, iconID);
 
-                        //Marshal.FreeHGlobal(titlePtr);
-                        //Marshal.FreeHGlobal(namePtr);
-                        //Marshal.FreeHGlobal(fcNamePtr);
-                    }
+                    //Marshal.FreeHGlobal(titlePtr);
+                    //Marshal.FreeHGlobal(namePtr);
+                    //Marshal.FreeHGlobal(fcNamePtr);
                 }
             }
         }
