@@ -1,11 +1,12 @@
 using System;
-using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 
 namespace JobIcons
 {
+    // ReSharper disable InconsistentNaming
     internal enum Job : uint
     {
+        
         ADV = 0,
         GLA = 1,
         PGL = 2,
@@ -48,12 +49,14 @@ namespace JobIcons
         REP = 39,
         SAG = 40
     }
+    // ReSharper restore InconsistentNaming
 
     internal static class JobExtensions
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "No, it looks dumb")]
         public static JobRole GetRole(this Job job)
         {
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (job)
             {
                 case Job.GLA:
@@ -102,8 +105,7 @@ namespace JobIcons
 
         public static string GetName(this Job job)
         { 
-            return JobIconsPlugin.DataManager.Excel.GetSheet<ClassJob>().GetRow((uint)job).Name ?? "ERROR";
-            
+            return JobIconsPlugin.DataManager.Excel.GetSheet<ClassJob>()?.GetRow((uint)job)?.Name ?? "ERROR";
         }
     }
 }
