@@ -128,6 +128,11 @@ namespace JobIcons2
 
             public SafeNamePlateObject GetNamePlateObject(int index)
             {
+                if (!_plugin.ClientState.IsLoggedIn)
+                {
+                    return null;
+                }
+                
                 if (Pointer == IntPtr.Zero)
                 {
                     PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
