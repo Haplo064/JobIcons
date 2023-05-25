@@ -176,11 +176,11 @@ namespace JobIcons2
 
         #endregion
 
-        private IntPtr SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
+        private IntPtr SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, IntPtr prefixOrWhatever, int iconId)
         {
             try
             {
-                return SetNamePlate(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return SetNamePlate(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
             }
             catch (Exception ex)
             {
@@ -189,31 +189,31 @@ namespace JobIcons2
                 var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
                 npObject.SetIconScale(1f);
 
-                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
             }
         }
 
-        private IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId)
+        private IntPtr SetNamePlate(IntPtr namePlateObjectPtr, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, IntPtr prefixOrWhatever, int iconId)
         {
             var npObject = new XivApi.SafeNamePlateObject(namePlateObjectPtr);
 
             npObject.SetIconScale(1f);
 
             if (!Configuration.Enabled || ClientState.IsPvP)
-                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
 
             var npInfo = npObject.NamePlateInfo;
             if (npInfo == null)
-                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
             
             var actorId = npInfo.Data.ObjectID.ObjectID;
             if (actorId == 0xE0000000)
-                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
 
             if (!npObject.IsPlayer)  // Only PlayerCharacters can have icons
             {
                 npObject.SetIconScale(1);
-                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
             }
             var jobId = npInfo.GetJobId();
             if (jobId < 1 || jobId >= Enum.GetValues(typeof(Job)).Length)
@@ -221,7 +221,7 @@ namespace JobIcons2
                 // This may not necessarily be needed anymore, but better safe than sorry.
                 var cache = _lastKnownJobId[actorId];
                 if (cache == null)
-                    return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                    return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
                 jobId = (uint)cache;
             }
 
@@ -269,7 +269,7 @@ namespace JobIcons2
                 if (!Configuration.ShowFcName)
                     fcName = _emptySeStringPtr;
 
-                var result = _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+                var result = _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
                 if (Configuration.LocationAdjust)
                 {
                     npObject.SetIconPosition(Configuration.XAdjust, Configuration.YAdjust);
@@ -279,7 +279,7 @@ namespace JobIcons2
             }
 
             npObject.SetIconScale(1);
-            return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, iconId);
+            return _setNamePlateHook.Original(namePlateObjectPtr, isPrefixTitle, displayTitle, title, name, fcName, prefixOrWhatever, iconId);
         }
     }
 }

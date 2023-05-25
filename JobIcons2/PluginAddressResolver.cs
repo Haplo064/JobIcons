@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace JobIcons2
 {
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-    internal delegate IntPtr SetNamePlateDelegate(IntPtr addon, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, int iconId);
+    internal delegate IntPtr SetNamePlateDelegate(IntPtr addon, bool isPrefixTitle, bool displayTitle, IntPtr title, IntPtr name, IntPtr fcName, IntPtr prefixOrWhatever, int iconId);
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
     internal delegate IntPtr AtkResNodeSetScaleDelegate(IntPtr node, float x, float y);
@@ -15,7 +15,7 @@ namespace JobIcons2
 
     internal sealed class PluginAddressResolver : BaseAddressResolver
     {
-        private const string AddonNamePlateSetNamePlateSignature = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 54 41 56 41 57 48 83 EC 40 44 0F B6 E2";
+        private const string AddonNamePlateSetNamePlateSignature = "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B 5C 24 ?? 45 38 BE";
         internal IntPtr AddonNamePlateSetNamePlatePtr;
 
         private const string AtkResNodeSetScaleSignature = "8B 81 ?? ?? ?? ?? A8 01 75 ?? F3 0F 10 41 ?? 0F 2E C1 7A ?? 75 ?? F3 0F 10 41 ?? 0F 2E C2 7A ?? 74 ?? 83 C8 01 89 81 ?? ?? ?? ?? F3 0F 10 05 ?? ?? ?? ??";
