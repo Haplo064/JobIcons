@@ -6,29 +6,24 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Data;
 using Dalamud.Game;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.Gui;
-using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 
 namespace JobIcons2
 {
     public class JobIcons2Plugin : IDalamudPlugin
     {
-        public string Name => "JobIcons2";
-
         private const string Command1 = "/jicons2";
         private const string Command2 = "/jobicons2";
 
         internal readonly DalamudPluginInterface Interface;
         internal readonly JobIcons2Configuration Configuration;
-        private readonly CommandManager _commandManager;
-        public readonly ClientState ClientState;
-        public readonly ObjectTable ObjectTable;
-        public static DataManager DataManager { get; private set; }
-        public readonly GameGui GameGui;
+        private readonly ICommandManager _commandManager;
+        public readonly IClientState ClientState;
+        public readonly IObjectTable ObjectTable;
+        public static IDataManager DataManager { get; private set; }
+        public readonly IGameGui GameGui;
+        public static IPluginLog PluginLog;
         internal readonly PluginAddressResolver Address;
         private readonly JobIcons2Gui _pluginGui;
 
@@ -41,12 +36,14 @@ namespace JobIcons2
         private readonly IntPtr[] _jobStr = new IntPtr[Enum.GetValues(typeof(Job)).Length];
 
         public JobIcons2Plugin(DalamudPluginInterface pluginInterface,
-            ClientState clientState,
-            CommandManager commands,
-            DataManager data,
-            GameGui gameGui,
-            ObjectTable objects,
-            SigScanner sigScanner
+            IClientState clientState,
+            ICommandManager commands,
+            IDataManager data,
+            IGameGui gameGui,
+            IObjectTable objects,
+            ISigScanner sigScanner,
+            IGameInteropProvider hookProvider,
+            IPluginLog pluginLog
             )
         {
             DataManager = data;
@@ -55,6 +52,7 @@ namespace JobIcons2
             _commandManager = commands;
             Interface = pluginInterface;
             GameGui = gameGui;
+            PluginLog = pluginLog;
 
             Configuration = Interface.GetPluginConfig() as JobIcons2Configuration ?? new JobIcons2Configuration();
             
@@ -64,7 +62,7 @@ namespace JobIcons2
             XivApi.Initialize(this,Address);
             IconSet.Initialize(this);
 
-            _setNamePlateHook = Hook<SetNamePlateDelegate>.FromAddress(Address.AddonNamePlateSetNamePlatePtr, SetNamePlateDetour);
+            _setNamePlateHook = hookProvider.HookFromAddress<SetNamePlateDelegate>(Address.AddonNamePlateSetNamePlatePtr, SetNamePlateDetour);
             _setNamePlateHook.Enable();
 
             _emptySeStringPtr = XivApi.StringToSeStringPtr("");

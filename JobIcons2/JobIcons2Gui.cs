@@ -1,7 +1,7 @@
-﻿using Dalamud.Interface;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System;
 using System.Numerics;
+using Dalamud.Interface.Utility;
 
 namespace JobIcons2
 {

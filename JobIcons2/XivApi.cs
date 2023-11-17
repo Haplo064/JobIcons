@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace JobIcons2
@@ -66,7 +65,7 @@ namespace JobIcons2
             }
         }
 
-        private void OnLogout_ResetRaptureAtkModule(object sender, EventArgs evt) => _raptureAtkModulePtr = IntPtr.Zero;
+        private void OnLogout_ResetRaptureAtkModule() => _raptureAtkModulePtr = IntPtr.Zero;
 
         #endregion
 
@@ -124,7 +123,7 @@ namespace JobIcons2
 
         internal class SafeAddonNamePlate
         {
-            private static IntPtr Pointer => _plugin.GameGui.GetAddonByName("NamePlate", 1);
+            private static IntPtr Pointer => _plugin.GameGui.GetAddonByName("NamePlate");
 
             public SafeNamePlateObject GetNamePlateObject(int index)
             {
@@ -135,7 +134,7 @@ namespace JobIcons2
                 
                 if (Pointer == IntPtr.Zero)
                 {
-                    PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
+                    JobIcons2Plugin.PluginLog.Debug($"[{GetType().Name}] AddonNamePlate was null");
                     return null;
                 }
 
@@ -143,7 +142,7 @@ namespace JobIcons2
                 var npObjectArrayPtr = Marshal.ReadIntPtr(npObjectArrayPtrPtr);
                 if (npObjectArrayPtr == IntPtr.Zero)
                 {
-                    PluginLog.Debug($"[{GetType().Name}] NamePlateObjectArray was null");
+                    JobIcons2Plugin.PluginLog.Debug($"[{GetType().Name}] NamePlateObjectArray was null");
                     return null;
                 }
 
@@ -177,7 +176,7 @@ namespace JobIcons2
                     var npObject0 = addon.GetNamePlateObject(0);
                     if (npObject0 == null)
                     {
-                        PluginLog.Debug($"[{GetType().Name}] NamePlateObject0 was null");
+                        JobIcons2Plugin.PluginLog.Debug($"[{GetType().Name}] NamePlateObject0 was null");
                         return -1;
                     }
 
@@ -186,7 +185,7 @@ namespace JobIcons2
                     var index = (_pointer.ToInt64() - npObjectBase.ToInt64()) / npObjectSize;
                     if (index is < 0 or >= 50)
                     {
-                        PluginLog.Debug($"[{GetType().Name}] NamePlateObject index was out of bounds");
+                        JobIcons2Plugin.PluginLog.Debug($"[{GetType().Name}] NamePlateObject index was out of bounds");
                         return -1;
                     }
 
@@ -204,7 +203,7 @@ namespace JobIcons2
                     var rapturePtr = RaptureAtkModulePtr;
                     if (rapturePtr == IntPtr.Zero)
                     {
-                        PluginLog.Debug($"[{GetType().Name}] RaptureAtkModule was null");
+                        JobIcons2Plugin.PluginLog.Debug($"[{GetType().Name}] RaptureAtkModule was null");
                         return null;
                     }
 

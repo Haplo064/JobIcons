@@ -27,7 +27,7 @@ namespace JobIcons2
         private const string GroupManagerIsObjectIdInPartySignature = "E8 ?? ?? ?? ?? EB B8 E8";
         internal IntPtr GroupManagerIsObjectIdInPartyPtr;
 
-        protected override void Setup64Bit(SigScanner scanner)
+        protected override void Setup64Bit(ISigScanner scanner)
         {
             AddonNamePlateSetNamePlatePtr = scanner.ScanText(AddonNamePlateSetNamePlateSignature);
             AtkResNodeSetScalePtr = scanner.ScanText(AtkResNodeSetScaleSignature);
