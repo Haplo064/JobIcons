@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push
+
+env:
+  PLUGIN_REPO: Cyeniia/DalamudPlugins
+  PROJECT_NAME: JobIcons2
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+        with:
+          path: "plugin"
+          ref: "master"
+          persist-credentials: false
+
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+        with:
+          path: "plugin-repo"
+          ref: "master"
+          repository: ${{env.PLUGIN_REPO}}
+          token: ${{secrets.PLUGINS_TOKEN}}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x.x'
+
+      - name: Restore dependencies
+        working-directory: plugin/
+        run: |
+          dotnet restore
+
+      - name: Download Dalamud
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
+
+      - name: Build
+        working-directory: plugin/
+        run: |
+          dotnet build --no-restore --configuration Release --nologo
+
+      - name: Copy-Build
+        id: copy-build
+        run: |
+          if(Test-Path -path plugin-repo/plugins/${{env.PROJECT_NAME}}/${{env.PROJECT_NAME}}.json) {
+            $repo_file = "plugin-repo/plugins/${{env.PROJECT_NAME}}/${{env.PROJECT_NAME}}.json"
+            $repo_json = Get-Content -Raw $repo_file | ConvertFrom-Json
+          
+            $build_file = "plugin/${{env.PROJECT_NAME}}/bin/Release/${{env.PROJECT_NAME}}/${{env.PROJECT_NAME}}.json"
+            $build_json = Get-Content -Raw $build_file | ConvertFrom-Json
+            "new-files='false'" >> $env:GITHUB_OUTPUT
+          
+            if($repo_json[0].AssemblyVersion -ne $build_json[0].AssemblyVersion) {
+              copy plugin/${{env.PROJECT_NAME}}/bin/Release/${{env.PROJECT_NAME}}/* plugin-repo/plugins/${{env.PROJECT_NAME}}
+              "new-files='true'" >> $env:GITHUB_OUTPUT
+            }
+          }
+          else {
+            mkdir plugin-repo/plugins/${{env.PROJECT_NAME}}
+            copy plugin/${{env.PROJECT_NAME}}/bin/Release/${{env.PROJECT_NAME}}/* plugin-repo/plugins/${{env.PROJECT_NAME}}
+            echo "new-files='true'" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Commit
+        working-directory: plugin-repo/
+        run: |
+          if(${{steps.copy-build.outputs.new-files}} -eq 'true') {
+            git config --global user.name "Actions User"
+            git config --global user.email "actions@github.com"
+            git fetch origin master
+            git branch -f master ${{ github.sha }}
+            git checkout master
+            git add -A
+            git commit -m "[CI] Updating zip for ${{ env.PROJECT_NAME }}" || true
+            git push origin master
+          }
+          else {
+            echo "Nothing to do"
+            Exit 0
+          }

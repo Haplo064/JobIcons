@@ -1,0 +1,110 @@
+using System;
+using Lumina.Excel.GeneratedSheets;
+
+namespace JobIcons2;
+
+// ReSharper disable InconsistentNaming
+internal enum Job : uint
+{
+        
+    ADV = 0,
+    GLA = 1,
+    PGL = 2,
+    MRD = 3,
+    LNC = 4,
+    ARC = 5,
+    CNJ = 6,
+    THM = 7,
+    CRP = 8,
+    BSM = 9,
+    ARM = 10,
+    GSM = 11,
+    LTW = 12,
+    WVR = 13,
+    ALC = 14,
+    CUL = 15,
+    MIN = 16,
+    BTN = 17,
+    FSH = 18,
+    PLD = 19,
+    MNK = 20,
+    WAR = 21,
+    DRG = 22,
+    BRD = 23,
+    WHM = 24,
+    BLM = 25,
+    ACN = 26,
+    SMN = 27,
+    SCH = 28,
+    ROG = 29,
+    NIN = 30,
+    MCH = 31,
+    DRK = 32,
+    AST = 33,
+    SAM = 34,
+    RDM = 35,
+    BLU = 36,
+    GNB = 37,
+    DNC = 38,
+    REP = 39,
+    SAG = 40
+}
+// ReSharper restore InconsistentNaming
+
+internal static class JobExtensions
+{
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "No, it looks dumb")]
+    public static JobRole GetRole(this Job job)
+    {
+        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+        switch (job)
+        {
+            case Job.GLA:
+            case Job.MRD:
+            case Job.PLD:
+            case Job.WAR:
+            case Job.DRK:
+            case Job.GNB: return JobRole.Tank;
+            case Job.CNJ:
+            case Job.AST:
+            case Job.WHM:
+            case Job.SCH: 
+            case Job.SAG: return JobRole.Heal;
+            case Job.PGL:
+            case Job.LNC:
+            case Job.MNK:
+            case Job.DRG:
+            case Job.ROG:
+            case Job.NIN:
+            case Job.SAM: 
+            case Job.REP: return JobRole.Melee;
+            case Job.ARC:
+            case Job.BRD:
+            case Job.MCH:
+            case Job.DNC: return JobRole.Ranged;
+            case Job.THM:
+            case Job.BLM:
+            case Job.ACN:
+            case Job.SMN:
+            case Job.RDM:
+            case Job.BLU: return JobRole.Magical;
+            case Job.CRP:
+            case Job.BSM:
+            case Job.ARM:
+            case Job.GSM:
+            case Job.LTW:
+            case Job.WVR:
+            case Job.ALC:
+            case Job.CUL: return JobRole.Crafter;
+            case Job.MIN:
+            case Job.BTN:
+            case Job.FSH: return JobRole.Gatherer;
+            default: throw new ArgumentException($"Unknown jobID {(int)job}");
+        }
+    }
+
+    public static string GetName(this Job job)
+    { 
+        return JobIcons2Plugin.DataManager.Excel.GetSheet<ClassJob>()?.GetRow((uint)job)?.Name ?? "ERROR";
+    }
+}
