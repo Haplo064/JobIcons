@@ -16,14 +16,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           path: "plugin"
           ref: "master"
           persist-credentials: false
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           path: "plugin-repo"
           ref: "master"
@@ -33,9 +33,9 @@ jobs:
           persist-credentials: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3.2.0
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '7.x.x'
+          dotnet-version: '8.x.x'
 
       - name: Restore dependencies
         working-directory: plugin/
